@@ -1,0 +1,17 @@
+apply plugin: 'java'
+
+sourceCompatibility = 1.8
+version = '1.0-SNAPSHOT'
+description = "An opinionated, Android-aware, Java functional reactive framework inspired by Cycle.js"
+
+repositories {
+    mavenCentral()
+    jcenter()
+}
+
+dependencies {
+    compile 'io.reactivex:rxjava:1.1.1'
+    testCompile 'junit:junit:4.12'
+    testCompile 'org.mockito:mockito-core:2.0.43-beta'
+    testCompile 'org.junit.contrib:truth:jar:0.28'
+}
