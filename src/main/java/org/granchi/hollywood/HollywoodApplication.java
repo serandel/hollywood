@@ -1,7 +1,10 @@
 package org.granchi.hollywood;
 
+import rx.functions.Action1;
 import rx.subjects.BehaviorSubject;
 import rx.subjects.Subject;
+
+import java.util.Collections;
 
 /**
  * Hollywood application.
@@ -9,7 +12,7 @@ import rx.subjects.Subject;
  * It orchestrates a model (single-threaded, non-blocking, immutable) with a set of different actors (blocking,
  * multi-threaded, mutable). It runs in a loop, where actions from an actor are applied to the model, who returns a
  * (possibly) different model that is applied to every actor.
- *
+ * <p>
  * Actions are applied in the same thread, so the model is easy to test and understand.
  *
  * @author serandel
@@ -17,7 +20,8 @@ import rx.subjects.Subject;
 
 public class HollywoodApplication<M extends Model<M>> {
     private M model;
-    private final ActorBuilder actorBuilder;
+    // TODO ejem
+    private final Cast<ActorMetadata, M> cast;
 
     private Subject<M, M> models;
 
@@ -25,18 +29,18 @@ public class HollywoodApplication<M extends Model<M>> {
      * Constructor.
      *
      * @param initialModel initial Model, can't be null
-     * @param actorBuilder ActorBuilder, can't be null
+     * @param cast         Cast, can't be null
      */
-    public HollywoodApplication(M initialModel, ActorBuilder actorBuilder) {
+    public HollywoodApplication(M initialModel, Cast cast) {
         if (initialModel == null) {
             throw new NullPointerException();
         }
-        if (actorBuilder == null) {
+        if (cast == null) {
             throw new NullPointerException();
         }
 
         this.model = initialModel;
-        this.actorBuilder = actorBuilder;
+        this.cast = cast;
 
         // TODO share?
         models = BehaviorSubject.create();
@@ -44,17 +48,21 @@ public class HollywoodApplication<M extends Model<M>> {
 
     /**
      * Runs the application.
-     *
+     * <p>
      * It enters a infinite loop until Model becomes null.
      */
     public void run() {
-        while(model != null) {
+        cast.getActions().subscribe(action -> {
+            model = model.actUpon(action);
+
             // Ensure every actor exists, and no one more
-            actorBuilder.ensureCastExistsConnectedTo(model.getActors(), models);
+            // Cast will complete its getActions Observable when given an empty Actor set, so this subscription will
+            // end
+            cast.ensureCastExistsConnectedTo(model == null ? Collections.emptySet() : model.getActors(), models);
 
-
-
-        }
-
+            cast.apply(model);
+        }, throwable -> {
+            throwable.printStackTrace();
+        });
     }
 }

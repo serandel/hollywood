@@ -4,6 +4,7 @@ import org.junit.Test;
 import rx.Observable;
 
 import java.util.Collections;
+import java.util.Set;
 import java.util.HashSet;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -14,7 +15,7 @@ public class HollywoodApplicationTest {
 
     @Test(expected=NullPointerException.class)
     public void testCantHaveANullModel() throws Exception {
-        new HollywoodApplication<>(null, mock(ActorBuilder.class));
+        new HollywoodApplication<>(null, mock(Cast.class));
     }
 
     @Test(expected=NullPointerException.class)
@@ -22,13 +23,15 @@ public class HollywoodApplicationTest {
         new HollywoodApplication<>(mock(MockModel.class), null);
     }
 
-    @Test()
+    @Test(timeout=1000)
     public void testModelWithNoActorsEndsApp() throws Exception {
         MockModel model = mock(MockModel.class);
+        Cast cast = mock(Cast.class);
 
         when(model.getActors()).thenReturn(Collections.emptySet());
+        when(cast.getActions()).thenReturn(Observable.empty());
 
-        new HollywoodApplication<>(model, mock(ActorBuilder.class)).run();
+        new HollywoodApplication<>(model, cast).run();
 
         assertThat(true);
     }
@@ -37,8 +40,6 @@ public class HollywoodApplicationTest {
     public void testApplicationUsesCast() {
         MockModel model = mock(MockModel.class);
         ActorMetadata actorMetadata = mock(ActorMetadata.class);
-
-        // TODO renombrar actorBuilder a Cast o algo así
 
         // TODO
 //        when(model.actUpon(action)).thenReturn(null);
@@ -53,7 +54,7 @@ public class HollywoodApplicationTest {
     // TODO if an actor is present there is no building again
     // TODO model returns several models and then null, assert everything is being called meanwhile
 
-    @Test
+    @Test(timeout=1000)
     @SuppressWarnings("unchecked")
     public void testEndsWithNullNextModel() throws Exception {
         MockModel model1 = mock(MockModel.class);
@@ -64,36 +65,37 @@ public class HollywoodApplicationTest {
         Action action2 = mock(Action.class);
         Action action3 = mock(Action.class);
 
-        Actor<MockModel> actor = mock(Actor.class);
         ActorMetadata actorMetadata = mock(ActorMetadata.class);
-        ActorBuilder<ActorMetadata, MockModel> actorBuilder = mock(ActorBuilder.class);
+        Cast<ActorMetadata, MockModel> cast = mock(Cast.class);
 
         Observable<Action> actions = Observable.just(action1, action2, action3);
+        Set<ActorMetadata> metadata = new HashSet<>(Collections.singletonList(actorMetadata));
 
-        when(actor.getActions()).thenReturn(actions);
+        when(cast.getActions()).thenReturn(actions);
 
         when(model1.actUpon(action1)).thenReturn(model2);
         when(model2.actUpon(action2)).thenReturn(model3);
         when(model3.actUpon(action3)).thenReturn(null);
 
-        when(model1.getActors()).thenReturn(new HashSet<>(Collections.singletonList(actorMetadata)));
-        when(model2.getActors()).thenReturn(new HashSet<>(Collections.singletonList(actorMetadata)));
-        when(model3.getActors()).thenReturn(new HashSet<>(Collections.singletonList(actorMetadata)));
+        when(model1.getActors()).thenReturn(metadata);
+        when(model2.getActors()).thenReturn(metadata);
+        when(model3.getActors()).thenReturn(metadata);
 
         // IDK why it doesn't compile without casting
-        when(actorBuilder.buildActorFrom(actorMetadata)).thenReturn((Actor) actor);
+        // TODO kill
+        // when(cast.buildActorFrom(actorMetadata)).thenReturn((Actor) actor);
 
-        new HollywoodApplication<>(model1, actorBuilder).run();
+        new HollywoodApplication<>(model1, cast).run();
 
-        verify(actorBuilder).buildActorFrom(actorMetadata);
+        verify(cast).ensureCastExistsConnectedTo(metadata, null);
 
         verify(model1.actUpon(action1));
         verify(model2.actUpon(action2));
         verify(model3.actUpon(action3));
 
-        verify(actor).apply(model1);
-        verify(actor).apply(model2);
-        verify(actor).apply(model3);
+        verify(cast).apply(model1);
+        verify(cast).apply(model2);
+        verify(cast).apply(model3);
     }
 
     // TODO exception while actUpon
