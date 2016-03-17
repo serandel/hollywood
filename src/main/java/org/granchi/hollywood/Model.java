@@ -30,7 +30,7 @@ public interface Model<M> {
 
     /**
      * Gets the list of Actors the model wants to have in this iteration of the app cycle, as a collection of
-     * ActorMetadata that can be used to build which ones are missing.
+     * ActorMetadata that can be used to buildActorFrom which ones are missing.
      *
      * @return list of actors
      */

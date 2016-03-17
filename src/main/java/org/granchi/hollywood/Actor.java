@@ -15,9 +15,21 @@ import rx.Observable;
  * <li>external server</li>
  * </ul>
  *
- * @param <M> type of model they expect
+ * @param <M> type of model that can be applied
  * @author serandel
  */
-public interface Actor<M extends Model<M>> {
+public interface Actor<M extends Model> {
+    /**
+     * Return an Observable with all future Actions.
+     *
+     * @return actions
+     */
     Observable<Action> getActions();
+
+    /**
+     * Applies a Model to the Actor, so it can adapt to changes in the business logic.
+     *
+     * @param model model
+     */
+    void apply(M model);
 }

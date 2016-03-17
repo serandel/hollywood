@@ -1,5 +1,8 @@
 package org.granchi.hollywood;
 
+import rx.subjects.BehaviorSubject;
+import rx.subjects.Subject;
+
 /**
  * Hollywood application.
  * <p>
@@ -14,6 +17,9 @@ package org.granchi.hollywood;
 
 public class HollywoodApplication<M extends Model<M>> {
     private M model;
+    private final ActorBuilder actorBuilder;
+
+    private Subject<M, M> models;
 
     /**
      * Constructor.
@@ -28,12 +34,27 @@ public class HollywoodApplication<M extends Model<M>> {
         if (actorBuilder == null) {
             throw new NullPointerException();
         }
+
+        this.model = initialModel;
+        this.actorBuilder = actorBuilder;
+
+        // TODO share?
+        models = BehaviorSubject.create();
     }
 
     /**
      * Runs the application.
+     *
+     * It enters a infinite loop until Model becomes null.
      */
     public void run() {
+        while(model != null) {
+            // Ensure every actor exists, and no one more
+            actorBuilder.ensureCastExistsConnectedTo(model.getActors(), models);
+
+
+
+        }
 
     }
 }
