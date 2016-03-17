@@ -11,16 +11,33 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.mockito.Mockito.*;
 
 public class HollywoodApplicationTest {
-    interface MockModel extends Model<MockModel> {}
+    interface MockModel extends Model<MockModel, ActorMetadata> {}
 
     @Test(expected=NullPointerException.class)
     public void testCantHaveANullModel() throws Exception {
-        new HollywoodApplication<>(null, mock(Cast.class));
+        new HollywoodApplication<>(null, models -> mock(Cast.class));
     }
 
     @Test(expected=NullPointerException.class)
-    public void testCantHaveANullActorBuilder() throws Exception {
+    public void testCantHaveANullCastFactory() throws Exception {
         new HollywoodApplication<>(mock(MockModel.class), null);
+    }
+
+    @Test
+    public void testBuildsAFactory() throws Exception {
+        Cast.Factory<ActorMetadata, MockModel> factory = mock(Cast.Factory.class);
+
+        when(factory.create(any(Observable.class))).thenReturn(mock(Cast.class));
+
+        new HollywoodApplication<>(mock(MockModel.class), factory);
+
+        verify(factory).create(any(Observable.class));
+    }
+
+
+    @Test(expected=IllegalStateException.class)
+    public void testCantHaveANullCast() throws Exception {
+        new HollywoodApplication<>(mock(MockModel.class), models -> null);
     }
 
     @Test(timeout=1000)
@@ -31,32 +48,14 @@ public class HollywoodApplicationTest {
         when(model.getActors()).thenReturn(Collections.emptySet());
         when(cast.getActions()).thenReturn(Observable.empty());
 
-        new HollywoodApplication<>(model, cast).run();
+        new HollywoodApplication<>(model, models -> cast).run();
 
         assertThat(true);
     }
-
-    @Test
-    public void testApplicationUsesCast() {
-        MockModel model = mock(MockModel.class);
-        ActorMetadata actorMetadata = mock(ActorMetadata.class);
-
-        // TODO
-//        when(model.actUpon(action)).thenReturn(null);
-//        when(model.getActors()).thenReturn(new HashSet<>(Arrays.asList(actorMetadata)));
-//        when(actorBuilder.buildActorFrom(actorMetadata)).thenReturn(actor);
-//
-//        new HollywoodApplication<MockModel>(model, actorBuilder);
-
-        assertThat(true);
-    }
-
-    // TODO if an actor is present there is no building again
-    // TODO model returns several models and then null, assert everything is being called meanwhile
 
     @Test(timeout=1000)
     @SuppressWarnings("unchecked")
-    public void testEndsWithNullNextModel() throws Exception {
+    public void testBasicLoop() throws Exception {
         MockModel model1 = mock(MockModel.class);
         MockModel model2 = mock(MockModel.class);
         MockModel model3 = mock(MockModel.class);
@@ -81,22 +80,19 @@ public class HollywoodApplicationTest {
         when(model2.getActors()).thenReturn(metadata);
         when(model3.getActors()).thenReturn(metadata);
 
-        // IDK why it doesn't compile without casting
-        // TODO kill
-        // when(cast.buildActorFrom(actorMetadata)).thenReturn((Actor) actor);
+        new HollywoodApplication<>(model1, models -> cast).run();
 
-        new HollywoodApplication<>(model1, cast).run();
+        verify(cast, times(3)).ensureCastExistsConnectedTo(same(metadata), any(Observable.class));
 
-        verify(cast).ensureCastExistsConnectedTo(metadata, null);
+        // TODO idk how to test cast receives the three models
 
-        verify(model1.actUpon(action1));
-        verify(model2.actUpon(action2));
-        verify(model3.actUpon(action3));
-
-        verify(cast).apply(model1);
-        verify(cast).apply(model2);
-        verify(cast).apply(model3);
+        verify(model1).actUpon(action1);
+        verify(model2).actUpon(action2);
+        verify(model3).actUpon(action3);
     }
+
+    // TODO if an actor is present there is no building again
+    // TODO model returns several models and then null, assert everything is being called meanwhile
 
     // TODO exception while actUpon
     // TODO with no exceptionhandler or with one that says null ends app

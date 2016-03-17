@@ -8,5 +8,4 @@ package org.granchi.hollywood;
  * @author serandel
  */
 public interface ActorMetadata {
-
 }

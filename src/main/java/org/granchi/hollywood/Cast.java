@@ -1,24 +1,23 @@
 package org.granchi.hollywood;
 
 import rx.Observable;
-import rx.subjects.Subject;
 
 import java.util.Set;
 
 /**
  * Stores all the active Actors, creating or removing them according to the ActorMetadata that the model provides.
  *
- * @param <M> type of ActorMetadata it uses for building and identifying Actors
- * @param <N> type of Model the Actors can accept
+ * @param <D> type of ActorMetadata it uses for building and identifying Actors
+ * @param <M> type of Model the Actors can accept
  */
-public abstract class Cast<M extends ActorMetadata, N extends Model> {
+public abstract class Cast<D extends ActorMetadata, M extends Model> {
     /**
      * Build a new Actor.
      *
      * @param actorMetadata metadata for creating the actor
      * @return actor
      */
-    protected abstract Actor<N> buildActorFrom(M actorMetadata, Observable<N> models);
+    protected abstract Actor<M> buildActorFrom(D actorMetadata, Observable<M> models);
 
     /**
      * Check if there is already an Actor built from an specific ActorMetadata.
@@ -26,7 +25,7 @@ public abstract class Cast<M extends ActorMetadata, N extends Model> {
      * @param metadata metadata
      * @return if there is an Actor from this metadata
      */
-    protected abstract boolean containsActorFrom(ActorMetadata metadata);
+    protected abstract boolean containsActorFrom(D metadata);
 
     /**
      * Ensures the cast contains every requested Actor and no more.
@@ -36,8 +35,8 @@ public abstract class Cast<M extends ActorMetadata, N extends Model> {
      * @param actors metadata for all the desired Actors
      * @param models Observable for the Model changes
      */
-    public void ensureCastExistsConnectedTo(Set<M> actors, Observable<N> models) {
-        for (M metadata : actors) {
+    public void ensureCastExistsConnectedTo(Set<D> actors, Observable<M> models) {
+        for (D metadata : actors) {
             if (!containsActorFrom(metadata)) {
                 buildActorFrom(metadata, models);
             }
@@ -55,25 +54,20 @@ public abstract class Cast<M extends ActorMetadata, N extends Model> {
         return Observable.empty();
     }
 
-
     /**
-     * Applies a new Model to every active Actor.
+     * Factory for creating Casts.
      *
-     * @param model Model
+     * @param <D> type of ActorMetadata it uses for building and identifying Actors
+     * @param <M> type of Model the Actors can accept
      */
-    public void apply(N model) {
-
+    @FunctionalInterface
+    public interface Factory<D extends ActorMetadata, M extends Model<M, D>> {
+        /**
+         * Create a Cast, subscribed to an Observable of Models.
+         *
+         * @param models Observable of Models
+         * @return Cast
+         */
+        Cast<D, M> create(Observable<M> models);
     }
-
-
-    /**
-     * Says if there is no active Actors.
-     *
-     * @return if there are no active Actors
-     */
-    public boolean isEmpty() {
-        return true;
-    }
-
-
 }

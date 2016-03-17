@@ -1,6 +1,5 @@
 package org.granchi.hollywood;
 
-import rx.functions.Action1;
 import rx.subjects.BehaviorSubject;
 import rx.subjects.Subject;
 
@@ -9,19 +8,20 @@ import java.util.Collections;
 /**
  * Hollywood application.
  * <p>
- * It orchestrates a model (single-threaded, non-blocking, immutable) with a set of different actors (blocking,
+ * It orchestrates a Model (single-threaded, non-blocking, immutable) with a set of different Actors (blocking,
  * multi-threaded, mutable). It runs in a loop, where actions from an actor are applied to the model, who returns a
  * (possibly) different model that is applied to every actor.
  * <p>
  * Actions are applied in the same thread, so the model is easy to test and understand.
  *
+ * @param <M> type of the Model
+ * @param <D> type of the ActorMetadata used to build Actors
  * @author serandel
  */
-
-public class HollywoodApplication<M extends Model<M>> {
+// TODO hook actions subscribe to app lifecycle
+public class HollywoodApplication<M extends Model<M, D>, D extends ActorMetadata> {
     private M model;
-    // TODO ejem
-    private final Cast<ActorMetadata, M> cast;
+    private final Cast<D, M> cast;
 
     private Subject<M, M> models;
 
@@ -29,21 +29,25 @@ public class HollywoodApplication<M extends Model<M>> {
      * Constructor.
      *
      * @param initialModel initial Model, can't be null
-     * @param cast         Cast, can't be null
+     * @param castFactory  factory for Cast, can't be null
      */
-    public HollywoodApplication(M initialModel, Cast cast) {
+    public HollywoodApplication(M initialModel, Cast.Factory<D, M> castFactory) {
         if (initialModel == null) {
             throw new NullPointerException();
         }
-        if (cast == null) {
+        if (castFactory == null) {
             throw new NullPointerException();
         }
 
         this.model = initialModel;
-        this.cast = cast;
 
         // TODO share?
         models = BehaviorSubject.create();
+
+        cast = castFactory.create(models);
+        if (cast == null) {
+            throw new IllegalStateException("Cast null");
+        }
     }
 
     /**
@@ -52,6 +56,13 @@ public class HollywoodApplication<M extends Model<M>> {
      * It enters a infinite loop until Model becomes null.
      */
     public void run() {
+        // Have to create the initial set of Actors
+        cast.ensureCastExistsConnectedTo(model.getActors(), models);
+
+        // Feed them initial model
+        models.onNext(model);
+
+        // And from now on...
         cast.getActions().subscribe(action -> {
             model = model.actUpon(action);
 
@@ -60,7 +71,9 @@ public class HollywoodApplication<M extends Model<M>> {
             // end
             cast.ensureCastExistsConnectedTo(model == null ? Collections.emptySet() : model.getActors(), models);
 
-            cast.apply(model);
+            models.onNext(model);
+
+            // TODO something with null model or empty actors
         }, throwable -> {
             throwable.printStackTrace();
         });
