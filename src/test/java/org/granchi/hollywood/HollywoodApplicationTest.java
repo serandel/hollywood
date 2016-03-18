@@ -27,11 +27,11 @@ public class HollywoodApplicationTest {
     public void testBuildsAFactory() throws Exception {
         Cast.Factory<ActorMetadata, MockModel> factory = mock(Cast.Factory.class);
 
-        when(factory.create(any(Observable.class))).thenReturn(mock(Cast.class));
+        when(factory.build(any(Observable.class))).thenReturn(mock(Cast.class));
 
         new HollywoodApplication<>(mock(MockModel.class), factory);
 
-        verify(factory).create(any(Observable.class));
+        verify(factory).build(any(Observable.class));
     }
 
 
@@ -82,9 +82,7 @@ public class HollywoodApplicationTest {
 
         new HollywoodApplication<>(model1, models -> cast).run();
 
-        verify(cast, times(3)).ensureCastExistsConnectedTo(same(metadata), any(Observable.class));
-
-        // TODO idk how to test cast receives the three models
+        verify(cast, times(3)).ensureCast(same(metadata));
 
         verify(model1).actUpon(action1);
         verify(model2).actUpon(action2);

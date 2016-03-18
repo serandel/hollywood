@@ -44,7 +44,7 @@ public class HollywoodApplication<M extends Model<M, D>, D extends ActorMetadata
         // TODO share?
         models = BehaviorSubject.create();
 
-        cast = castFactory.create(models);
+        cast = castFactory.build(models);
         if (cast == null) {
             throw new IllegalStateException("Cast null");
         }
@@ -57,7 +57,7 @@ public class HollywoodApplication<M extends Model<M, D>, D extends ActorMetadata
      */
     public void run() {
         // Have to create the initial set of Actors
-        cast.ensureCastExistsConnectedTo(model.getActors(), models);
+        cast.ensureCast(model.getActors());
 
         // Feed them initial model
         models.onNext(model);
@@ -69,7 +69,7 @@ public class HollywoodApplication<M extends Model<M, D>, D extends ActorMetadata
             // Ensure every actor exists, and no one more
             // Cast will complete its getActions Observable when given an empty Actor set, so this subscription will
             // end
-            cast.ensureCastExistsConnectedTo(model == null ? Collections.emptySet() : model.getActors(), models);
+            cast.ensureCast(model == null ? Collections.emptySet() : model.getActors());
 
             models.onNext(model);
 

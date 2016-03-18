@@ -27,9 +27,26 @@ public interface Actor<M extends Model> {
     Observable<Action> getActions();
 
     /**
-     * Applies a Model to the Actor, so it can adapt to changes in the business logic.
+     * Subscribes to all future Models, so it can adapt to changes in the business logic.
      *
-     * @param model model
+     * @param models Models
      */
-    void apply(M model);
+    void subscribeTo(Observable<M> models);
+
+    /**
+     * Factory for creating Actors.
+     *
+     * @param <D> type of ActorMetadata it uses for building and identifying Actors
+     * @param <M> type of Model the Actors can accept
+     */
+    @FunctionalInterface
+    public interface Factory<M extends Model<M, D>, D extends ActorMetadata> {
+        /**
+         * Create an Actor, subscribed to an Observable of Models.
+         *
+         * @param metadata metadata
+         * @return Actor
+         */
+        Actor<M> create(D metadata);
+    }
 }

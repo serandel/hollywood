@@ -11,13 +11,28 @@ import java.util.Set;
  * @param <M> type of Model the Actors can accept
  */
 public abstract class Cast<D extends ActorMetadata, M extends Model> {
+    // TODO share?
+    private final Observable<M> models;
+
+    /**
+     * Constructor.
+     *
+     * @param models Observable for Models
+     */
+    protected Cast(Observable<M> models) {
+        if (models == null) {
+            throw new NullPointerException();
+        }
+
+        this.models = models;
+    }
+
     /**
      * Build a new Actor.
      *
-     * @param actorMetadata metadata for creating the actor
-     * @return actor
+     * @param metadata metadata for creating the actor
      */
-    protected abstract Actor<M> buildActorFrom(D actorMetadata, Observable<M> models);
+    protected abstract Actor<M> buildActorFrom(D metadata);
 
     /**
      * Check if there is already an Actor built from an specific ActorMetadata.
@@ -33,12 +48,11 @@ public abstract class Cast<D extends ActorMetadata, M extends Model> {
      * If an Actor has to be created, it is subscribed to the Model Observable.
      *
      * @param actors metadata for all the desired Actors
-     * @param models Observable for the Model changes
      */
-    public void ensureCastExistsConnectedTo(Set<D> actors, Observable<M> models) {
+    public void ensureCast(Set<D> actors) {
         for (D metadata : actors) {
             if (!containsActorFrom(metadata)) {
-                buildActorFrom(metadata, models);
+                buildActorFrom(metadata).subscribeTo(models);
             }
         }
 
@@ -68,6 +82,6 @@ public abstract class Cast<D extends ActorMetadata, M extends Model> {
          * @param models Observable of Models
          * @return Cast
          */
-        Cast<D, M> create(Observable<M> models);
+        Cast<D, M> build(Observable<M> models);
     }
 }
