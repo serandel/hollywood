@@ -42,7 +42,7 @@ public interface Actor<M extends Model> {
      * @param <M> type of Model the Actors can accept
      */
     @FunctionalInterface
-    public interface Factory<M extends Model<M, D>, D extends ActorMetadata> {
+    interface Factory<M extends Model<M, D>, D extends ActorMetadata> {
         /**
          * Create an Actor, subscribed to an Observable of Models.
          *

@@ -10,7 +10,6 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.HashSet;
 
-import static com.google.common.truth.Truth.assertThat;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -45,6 +44,7 @@ public class HollywoodApplicationTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void testBuildsAFactory() throws Exception {
         when(castFactory.build(any(Observable.class))).thenReturn(cast);
 

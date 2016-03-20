@@ -74,8 +74,6 @@ public class HollywoodApplication<M extends Model<M, D>, D extends ActorMetadata
             models.onNext(model);
 
             // TODO something with null model or empty actors
-        }, throwable -> {
-            throwable.printStackTrace();
-        });
+        }, Throwable::printStackTrace);
     }
 }

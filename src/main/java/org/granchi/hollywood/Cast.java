@@ -1,9 +1,10 @@
 package org.granchi.hollywood;
 
 import rx.Observable;
+import rx.Subscription;
+import rx.subjects.PublishSubject;
 
-import java.util.Collection;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Stores all the active Actors, creating or removing them according to the ActorMetadata that the model provides.
@@ -12,11 +13,16 @@ import java.util.Set;
  * @param <M> type of Model the Actors can accept
  */
 public abstract class Cast<D extends ActorMetadata, M extends Model> {
-    // TODO share?
+    // It's not necessary to share because it's hot
     private final Observable<M> models;
+
+    private final PublishSubject<Action> actions;
+    private final Map<Actor, Subscription> actionsSubscriptions;
 
     /**
      * Constructor.
+     * <p>
+     * Warning: the Observable for Models should be hot, because it will be subscribed by every possible future Actor
      *
      * @param models Observable for Models
      */
@@ -26,6 +32,9 @@ public abstract class Cast<D extends ActorMetadata, M extends Model> {
         }
 
         this.models = models;
+
+        actions = PublishSubject.create();
+        actionsSubscriptions = new HashMap<>();
     }
 
     /**
@@ -53,12 +62,21 @@ public abstract class Cast<D extends ActorMetadata, M extends Model> {
     public void ensureCast(Set<D> metadatas) {
         for (D metadata : metadatas) {
             if (!containsActorFrom(metadata)) {
-                buildActorFrom(metadata).subscribeTo(models);
+                Actor<M> actor = buildActorFrom(metadata);
+
+                actor.subscribeTo(models);
+
+                // Can't subscribe directly the subject, or it will complete itself with the first onCompleted
+                Subscription subscription = actor.getActions().subscribe(actions::onNext,
+                        actions::onError);
+                actionsSubscriptions.put(actor, subscription);
             }
         }
 
         // Remove unwanted ones
         Collection<Actor<M>> actors = getActors();
+        // To avoid ConcurrentModificationException
+        List<Actor<M>> unwanteds = new ArrayList<>();
         if (actors.size() != metadatas.size()) {
             for (Actor<M> actor : actors) {
                 boolean wanted = false;
@@ -71,10 +89,19 @@ public abstract class Cast<D extends ActorMetadata, M extends Model> {
                 }
 
                 if (!wanted) {
-                    remove(actor);
+                    unwanteds.add(actor);
                 }
             }
+
+            for (Actor<M> actor : unwanteds) {
+                actionsSubscriptions.get(actor).unsubscribe();
+                actionsSubscriptions.remove(actor);
+
+                remove(actor);
+            }
         }
+
+        // TODO take into account actors that are created or destroyed by the system, not Cast
     }
 
     /**
@@ -87,7 +114,7 @@ public abstract class Cast<D extends ActorMetadata, M extends Model> {
     /**
      * Says if an Actor has been created from a specific Metadata.
      *
-     * @param actor Actor
+     * @param actor    Actor
      * @param metadata Metadata
      * @return if the Actor was created from the Metadata
      */
@@ -106,7 +133,7 @@ public abstract class Cast<D extends ActorMetadata, M extends Model> {
      * @return Observable for Actions
      */
     public Observable<Action> getActions() {
-        return Observable.empty();
+        return actions;
     }
 
     /**

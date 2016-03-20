@@ -45,6 +45,9 @@ public class SingleInstanceCastTest {
     public void setUp() {
         metadata = new SingleInstanceActorMetadata(actor.getClass().getName());
         metadata2 = new SingleInstanceActorMetadata(actor2.getClass().getName());
+
+        when(actor.getActions()).thenReturn(Observable.empty());
+        when(actor2.getActions()).thenReturn(Observable.empty());
     }
 
     @Test(expected = NullPointerException.class)
