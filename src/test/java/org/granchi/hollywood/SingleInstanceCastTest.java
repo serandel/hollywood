@@ -1,27 +1,31 @@
 package org.granchi.hollywood;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import rx.Observable;
-import rx.observers.TestSubscriber;
-import rx.subjects.BehaviorSubject;
-import rx.subjects.Subject;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.doAnswer;
+import static com.google.common.truth.Truth.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class SingleInstanceCastTest {
-    interface MockModel extends Model<MockModel, SingleInstanceActorMetadata> {
+    private interface MockModel extends Model<MockModel, SingleInstanceActorMetadata> {
+    }
+
+    // Different subclasses, so the instances get registered correctly
+    private interface ActorSub1 extends Actor<MockModel> {
+    }
+
+    private interface ActorSub2 extends Actor<MockModel> {
     }
 
     @Mock
@@ -31,7 +35,17 @@ public class SingleInstanceCastTest {
     private Actor.Factory<MockModel, SingleInstanceActorMetadata> actorFactory;
 
     @Mock
-    private Actor actor, actor2;
+    private ActorSub1 actor;
+    @Mock
+    private ActorSub2 actor2;
+
+    private SingleInstanceActorMetadata metadata, metadata2;
+
+    @Before
+    public void setUp() {
+        metadata = new SingleInstanceActorMetadata(actor.getClass().getName());
+        metadata2 = new SingleInstanceActorMetadata(actor2.getClass().getName());
+    }
 
     @Test(expected = NullPointerException.class)
     public void testCantHaveANullActorFactory() {
@@ -51,14 +65,19 @@ public class SingleInstanceCastTest {
         when(actorFactory.create(metadata)).thenReturn(actor);
 
         SingleInstanceCast<MockModel> cast = new SingleInstanceCast<>(actorFactory, Observable.empty());
+
+        assertThat(!cast.containsActorFrom(metadata));
+
         cast.ensureCast(metadatas);
 
         verify(actorFactory).create(metadata);
+
+        assertThat(cast.containsActorFrom(metadata));
     }
 
     @Test
     public void testCreatesAnInstanceOnlyOnce() {
-        SingleInstanceActorMetadata metadata = new SingleInstanceActorMetadata("abc");
+        SingleInstanceActorMetadata metadata = new SingleInstanceActorMetadata(actor.getClass().getName());
         Set<SingleInstanceActorMetadata> metadatas = Collections.singleton(metadata);
 
         when(actorFactory.create(metadata)).thenReturn(actor);
@@ -68,60 +87,51 @@ public class SingleInstanceCastTest {
         cast.ensureCast(metadatas);
         cast.ensureCast(metadatas);
 
+        // Just once
         verify(actorFactory).create(metadata);
+
+        assertThat(cast.containsActorFrom(metadata));
     }
 
     @Test
     public void testCreatesSeveralClasses() {
-        SingleInstanceActorMetadata metadata1 = new SingleInstanceActorMetadata("abc");
-        SingleInstanceActorMetadata metadata2 = new SingleInstanceActorMetadata("def");
+        Set<SingleInstanceActorMetadata> metadatas = new HashSet<>(Arrays.asList(metadata, metadata2));
 
-        Set<SingleInstanceActorMetadata> metadatas = new HashSet<>(Arrays.asList(metadata1, metadata2));
-
-        when(actorFactory.create(any(SingleInstanceActorMetadata.class))).thenReturn(actor);
+        when(actorFactory.create(metadata)).thenReturn(actor);
+        when(actorFactory.create(metadata2)).thenReturn(actor2);
 
         SingleInstanceCast<MockModel> cast = new SingleInstanceCast<>(actorFactory, Observable.empty());
 
         cast.ensureCast(metadatas);
 
-        verify(actorFactory).create(metadata1);
+        verify(actorFactory).create(metadata);
         verify(actorFactory).create(metadata2);
+
+        assertThat(cast.containsActorFrom(metadata)).isTrue();
+        assertThat(cast.containsActorFrom(metadata2)).isTrue();
     }
 
     @Test
-    public void testPropagatesModelsObservable() {
-        SingleInstanceActorMetadata metadata1 = new SingleInstanceActorMetadata("abc");
-        SingleInstanceActorMetadata metadata2 = new SingleInstanceActorMetadata("def");
+    public void testRemoveUnwantedClasses() {
+        Set<SingleInstanceActorMetadata> metadatas = new HashSet<>(Arrays.asList(metadata, metadata2));
 
-        Set<SingleInstanceActorMetadata> metadatas = new HashSet<>(Arrays.asList(metadata1, metadata2));
-        Subject<MockModel, MockModel> models = BehaviorSubject.create();
-
-        when(actorFactory.create(metadata1)).thenReturn(actor);
+        when(actorFactory.create(metadata)).thenReturn(actor);
         when(actorFactory.create(metadata2)).thenReturn(actor2);
 
-        TestSubscriber<MockModel> testSubscriber = new TestSubscriber<>();
-        TestSubscriber<MockModel> testSubscriber2 = new TestSubscriber<>();
+        SingleInstanceCast<MockModel> cast = new SingleInstanceCast<>(actorFactory, Observable.empty());
 
-        doAnswer(invocation -> {
-            invocation.getArgumentAt(0, Observable.class).subscribe(testSubscriber);
-            return null;
-        }).when(actor).subscribeTo(models);
-
-        doAnswer(invocation -> {
-            invocation.getArgumentAt(0, Observable.class).subscribe(testSubscriber2);
-            return null;
-        }).when(actor2).subscribeTo(models);
-
-        SingleInstanceCast<MockModel> cast = new SingleInstanceCast<>(actorFactory, models);
         cast.ensureCast(metadatas);
-        models.onNext(model);
 
-        verify(actor).subscribeTo(models);
-        verify(actor2).subscribeTo(models);
+        verify(actorFactory).create(metadata);
+        verify(actorFactory).create(metadata2);
 
-        testSubscriber.assertValue(model);
-        testSubscriber2.assertValue(model);
+        assertThat(cast.containsActorFrom(metadata)).isTrue();
+        assertThat(cast.containsActorFrom(metadata2)).isTrue();
+
+        metadatas.remove(metadata2);
+        cast.ensureCast(metadatas);
+
+        assertThat(cast.containsActorFrom(metadata)).isTrue();
+        assertThat(cast.containsActorFrom(metadata2)).isFalse();
     }
-
-    // TODO remove one actor
 }

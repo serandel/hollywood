@@ -2,6 +2,7 @@ package org.granchi.hollywood;
 
 import rx.Observable;
 
+import java.util.Collection;
 import java.util.Set;
 
 /**
@@ -47,17 +48,57 @@ public abstract class Cast<D extends ActorMetadata, M extends Model> {
      * <p>
      * If an Actor has to be created, it is subscribed to the Model Observable.
      *
-     * @param actors metadata for all the desired Actors
+     * @param metadatas metadata for all the desired Actors
      */
-    public void ensureCast(Set<D> actors) {
-        for (D metadata : actors) {
+    public void ensureCast(Set<D> metadatas) {
+        for (D metadata : metadatas) {
             if (!containsActorFrom(metadata)) {
                 buildActorFrom(metadata).subscribeTo(models);
             }
         }
 
-        // TODO remove unwanted actors
+        // Remove unwanted ones
+        Collection<Actor<M>> actors = getActors();
+        if (actors.size() != metadatas.size()) {
+            for (Actor<M> actor : actors) {
+                boolean wanted = false;
+
+                for (D metadata : metadatas) {
+                    if (isActorFrom(actor, metadata)) {
+                        wanted = true;
+                        break;
+                    }
+                }
+
+                if (!wanted) {
+                    remove(actor);
+                }
+            }
+        }
     }
+
+    /**
+     * Returns the collection of created Actors.
+     *
+     * @return Actors
+     */
+    protected abstract Collection<Actor<M>> getActors();
+
+    /**
+     * Says if an Actor has been created from a specific Metadata.
+     *
+     * @param actor Actor
+     * @param metadata Metadata
+     * @return if the Actor was created from the Metadata
+     */
+    protected abstract boolean isActorFrom(Actor<M> actor, D metadata);
+
+    /**
+     * Removes an Actor from the Cast.
+     *
+     * @param actor Actor
+     */
+    protected abstract void remove(Actor actor);
 
     /**
      * Gives an Observable with Actions from any active Actor in the Cast.
@@ -70,6 +111,9 @@ public abstract class Cast<D extends ActorMetadata, M extends Model> {
 
     /**
      * Factory for creating Casts.
+     * <p>
+     * It is needed, because we want the application to create the Models observable to give to the Cast in its
+     * constructor.
      *
      * @param <D> type of ActorMetadata it uses for building and identifying Actors
      * @param <M> type of Model the Actors can accept

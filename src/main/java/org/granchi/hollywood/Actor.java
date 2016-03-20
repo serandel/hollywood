@@ -29,6 +29,8 @@ public interface Actor<M extends Model> {
     /**
      * Subscribes to all future Models, so it can adapt to changes in the business logic.
      *
+     * The Models can't be given in the constructor, because some Actors will be built by the SO, like Android views.
+     *
      * @param models Models
      */
     void subscribeTo(Observable<M> models);

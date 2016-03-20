@@ -2,6 +2,7 @@ package org.granchi.hollywood;
 
 import rx.Observable;
 
+import java.util.Collection;
 import java.util.HashMap;
 
 /**
@@ -52,5 +53,20 @@ public class SingleInstanceCast<M extends Model<M, SingleInstanceActorMetadata>>
     @Override
     protected boolean containsActorFrom(SingleInstanceActorMetadata metadata) {
         return actors.containsKey(metadata.getActorClass());
+    }
+
+    @Override
+    protected Collection<Actor<M>> getActors() {
+        return actors.values();
+    }
+
+    @Override
+    protected boolean isActorFrom(Actor<M> actor, SingleInstanceActorMetadata metadata) {
+        return (metadata != null) && (actor != null) && metadata.getActorClass().equals(actor.getClass().getName());
+    }
+
+    @Override
+    protected void remove(Actor actor) {
+        actors.remove(actor.getClass().getName());
     }
 }

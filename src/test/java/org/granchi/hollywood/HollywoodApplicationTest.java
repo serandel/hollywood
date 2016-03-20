@@ -15,7 +15,7 @@ import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class HollywoodApplicationTest {
-    interface MockModel extends Model<MockModel, ActorMetadata> {
+    private interface MockModel extends Model<MockModel, ActorMetadata> {
     }
 
     @Mock
