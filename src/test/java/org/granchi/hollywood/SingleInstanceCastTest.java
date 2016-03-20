@@ -1,8 +1,13 @@
 package org.granchi.hollywood;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
 import rx.Observable;
+import rx.observers.TestSubscriber;
 import rx.subjects.BehaviorSubject;
+import rx.subjects.Subject;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -10,54 +15,60 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@RunWith(MockitoJUnitRunner.class)
 public class SingleInstanceCastTest {
     interface MockModel extends Model<MockModel, SingleInstanceActorMetadata> {
     }
 
+    @Mock
+    private MockModel model;
+
+    @Mock
+    private Actor.Factory<MockModel, SingleInstanceActorMetadata> actorFactory;
+
+    @Mock
+    private Actor actor, actor2;
+
     @Test(expected = NullPointerException.class)
     public void testCantHaveANullActorFactory() {
-        new SingleInstanceCast<>(null, mock(Observable.class));
+        new SingleInstanceCast<>(null, Observable.<MockModel>empty());
     }
 
     @Test(expected = NullPointerException.class)
     public void testCantHaveANullModelsObservable() {
-        new SingleInstanceCast<>(mock(Actor.Factory.class), null);
+        new SingleInstanceCast<>(actorFactory, null);
     }
 
     @Test
     public void testCreatesAnInstance() {
         SingleInstanceActorMetadata metadata = new SingleInstanceActorMetadata("abc");
         Set<SingleInstanceActorMetadata> metadatas = Collections.singleton(metadata);
-        Observable<MockModel> models = mock(Observable.class);
 
-        Actor.Factory<MockModel, SingleInstanceActorMetadata> factory = mock(Actor.Factory.class);
-        when(factory.create(metadata)).thenReturn(mock(Actor.class));
+        when(actorFactory.create(metadata)).thenReturn(actor);
 
-        SingleInstanceCast<MockModel> cast = new SingleInstanceCast<>(factory, models);
+        SingleInstanceCast<MockModel> cast = new SingleInstanceCast<>(actorFactory, Observable.empty());
         cast.ensureCast(metadatas);
 
-        verify(factory).create(metadata);
+        verify(actorFactory).create(metadata);
     }
 
     @Test
-    public void testCreatesAnInstanceOnlyOne() {
+    public void testCreatesAnInstanceOnlyOnce() {
         SingleInstanceActorMetadata metadata = new SingleInstanceActorMetadata("abc");
         Set<SingleInstanceActorMetadata> metadatas = Collections.singleton(metadata);
-        Observable<MockModel> models = mock(Observable.class);
 
-        Actor.Factory<MockModel, SingleInstanceActorMetadata> factory = mock(Actor.Factory.class);
-        when(factory.create(metadata)).thenReturn(mock(Actor.class));
+        when(actorFactory.create(metadata)).thenReturn(actor);
 
-        SingleInstanceCast<MockModel> cast = new SingleInstanceCast<>(factory, models);
+        SingleInstanceCast<MockModel> cast = new SingleInstanceCast<>(actorFactory, Observable.empty());
 
         cast.ensureCast(metadatas);
         cast.ensureCast(metadatas);
 
-        verify(factory).create(metadata);
+        verify(actorFactory).create(metadata);
     }
 
     @Test
@@ -66,17 +77,15 @@ public class SingleInstanceCastTest {
         SingleInstanceActorMetadata metadata2 = new SingleInstanceActorMetadata("def");
 
         Set<SingleInstanceActorMetadata> metadatas = new HashSet<>(Arrays.asList(metadata1, metadata2));
-        Observable<MockModel> models = mock(Observable.class);
 
-        Actor.Factory<MockModel, SingleInstanceActorMetadata> factory = mock(Actor.Factory.class);
-        when(factory.create(any(SingleInstanceActorMetadata.class))).thenReturn(mock(Actor.class));
+        when(actorFactory.create(any(SingleInstanceActorMetadata.class))).thenReturn(actor);
 
-        SingleInstanceCast<MockModel> cast = new SingleInstanceCast<>(factory, models);
+        SingleInstanceCast<MockModel> cast = new SingleInstanceCast<>(actorFactory, Observable.empty());
 
         cast.ensureCast(metadatas);
 
-        verify(factory).create(metadata1);
-        verify(factory).create(metadata2);
+        verify(actorFactory).create(metadata1);
+        verify(actorFactory).create(metadata2);
     }
 
     @Test
@@ -85,22 +94,33 @@ public class SingleInstanceCastTest {
         SingleInstanceActorMetadata metadata2 = new SingleInstanceActorMetadata("def");
 
         Set<SingleInstanceActorMetadata> metadatas = new HashSet<>(Arrays.asList(metadata1, metadata2));
-        Observable<MockModel> models = BehaviorSubject.create();
+        Subject<MockModel, MockModel> models = BehaviorSubject.create();
 
-        Actor.Factory<MockModel, SingleInstanceActorMetadata> factory = mock(Actor.Factory.class);
-        Actor<MockModel> actor1 = mock(Actor.class);
-        Actor<MockModel> actor2 = mock(Actor.class);
+        when(actorFactory.create(metadata1)).thenReturn(actor);
+        when(actorFactory.create(metadata2)).thenReturn(actor2);
 
-        when(factory.create(metadata1)).thenReturn(actor1);
-        when(factory.create(metadata2)).thenReturn(actor2);
+        TestSubscriber<MockModel> testSubscriber = new TestSubscriber<>();
+        TestSubscriber<MockModel> testSubscriber2 = new TestSubscriber<>();
 
-        SingleInstanceCast<MockModel> cast = new SingleInstanceCast<>(factory, models);
+        doAnswer(invocation -> {
+            invocation.getArgumentAt(0, Observable.class).subscribe(testSubscriber);
+            return null;
+        }).when(actor).subscribeTo(models);
 
+        doAnswer(invocation -> {
+            invocation.getArgumentAt(0, Observable.class).subscribe(testSubscriber2);
+            return null;
+        }).when(actor2).subscribeTo(models);
+
+        SingleInstanceCast<MockModel> cast = new SingleInstanceCast<>(actorFactory, models);
         cast.ensureCast(metadatas);
+        models.onNext(model);
 
-        // TODO this is very naive, we will have to share the observable for sure!
-        verify(actor1).subscribeTo(models);
+        verify(actor).subscribeTo(models);
         verify(actor2).subscribeTo(models);
+
+        testSubscriber.assertValue(model);
+        testSubscriber2.assertValue(model);
     }
 
     // TODO remove one actor
