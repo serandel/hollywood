@@ -137,4 +137,6 @@ public class SingleInstanceCastTest {
         assertThat(cast.containsActorFrom(metadata)).isTrue();
         assertThat(cast.containsActorFrom(metadata2)).isFalse();
     }
+
+    // TODO same class, different parameters, exception
 }
