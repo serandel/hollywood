@@ -7,14 +7,42 @@ import org.mockito.runners.MockitoJUnitRunner;
 import rx.Observable;
 
 import java.util.Collections;
-import java.util.Set;
 import java.util.HashSet;
+import java.util.Set;
 
+import static com.google.common.truth.Truth.assertThat;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class HollywoodApplicationTest {
     private interface MockModel extends Model<MockModel, ActorMetadata> {
+    }
+
+    private class MockHollywoodApplication extends HollywoodApplication<MockModel, ActorMetadata> {
+        public MockHollywoodApplication(MockModel initialModel,
+                                        Cast.Factory<ActorMetadata, MockModel> castFactory) {
+            super(initialModel, castFactory);
+        }
+
+        @Override
+        protected void logWarning(String msg) {
+
+        }
+
+        @Override
+        protected void logError(String msg, Throwable throwable) {
+
+        }
+
+        @Override
+        protected void logInfo(String msg) {
+
+        }
+
+        @Override
+        protected void logDebug(String msg) {
+
+        }
     }
 
     @Mock
@@ -32,15 +60,14 @@ public class HollywoodApplicationTest {
     @Mock
     private Action action, action2, action3;
 
-
     @Test(expected = NullPointerException.class)
     public void testCantHaveANullModel() throws Exception {
-        new HollywoodApplication<>(null, models -> cast);
+        new MockHollywoodApplication(null, models -> cast);
     }
 
     @Test(expected = NullPointerException.class)
     public void testCantHaveANullCastFactory() throws Exception {
-        new HollywoodApplication<>(model, null);
+        new MockHollywoodApplication(model, null);
     }
 
     @Test
@@ -48,7 +75,7 @@ public class HollywoodApplicationTest {
     public void testBuildsAFactory() throws Exception {
         when(castFactory.build(any(Observable.class))).thenReturn(cast);
 
-        new HollywoodApplication<>(model, castFactory);
+        new MockHollywoodApplication(model, castFactory);
 
         verify(castFactory).build(any(Observable.class));
     }
@@ -56,20 +83,39 @@ public class HollywoodApplicationTest {
 
     @Test(expected = IllegalStateException.class)
     public void testCantHaveANullCast() throws Exception {
-        new HollywoodApplication<>(model, models -> null);
+        new MockHollywoodApplication(model, models -> null);
     }
 
-    @Test(timeout = 1000)
+    @Test
     public void testModelWithNoActorsEndsApp() throws Exception {
         when(model.getActors()).thenReturn(Collections.emptySet());
         when(cast.getActions()).thenReturn(Observable.empty());
 
-        new HollywoodApplication<>(model, models -> cast).run();
+        MockHollywoodApplication app = new MockHollywoodApplication(model, models -> cast);
+        app.run();
+
+        Thread.sleep(100);
+        assertThat(app.isRunning()).isFalse();
+    }
+
+    @Test
+    public void testNullModelEndsApp() throws Exception {
+        Set<ActorMetadata> metadata = new HashSet<>(Collections.singletonList(actorMetadata));
+
+        when(model.getActors()).thenReturn(metadata);
+        when(cast.getActions()).thenReturn(Observable.just(action));
+        when(model.actUpon(action)).thenReturn(null);
+
+        MockHollywoodApplication app = new MockHollywoodApplication(model, models -> cast);
+        app.run();
+
+        Thread.sleep(100);
+        assertThat(app.isRunning()).isFalse();
     }
 
     @Test(timeout = 1000)
     @SuppressWarnings("unchecked")
-    public void testBasicLoop() throws Exception {
+    public void testBasicCycle() throws Exception {
         Observable<Action> actions = Observable.just(action, action2, action3);
         Set<ActorMetadata> metadata = new HashSet<>(Collections.singletonList(actorMetadata));
 
@@ -83,7 +129,10 @@ public class HollywoodApplicationTest {
         when(model2.getActors()).thenReturn(metadata);
         when(model3.getActors()).thenReturn(metadata);
 
-        new HollywoodApplication<>(model, models -> cast).run();
+        new MockHollywoodApplication(model, models -> cast).run();
+
+        // Should be enough
+        Thread.sleep(250);
 
         verify(cast, times(3)).ensureCast(same(metadata));
 
@@ -92,18 +141,13 @@ public class HollywoodApplicationTest {
         verify(model3).actUpon(action3);
     }
 
-    // TODO if an actor is present there is no building again
-    // TODO model returns several models and then null, assert everything is being called meanwhile
-
     // TODO exception while actUpon
     // TODO with no exceptionhandler or with one that says null ends app
+
+    // TODO all the actions in one thread
+    // TODO hook events to the same thread
 
     // TODO unsubscribe when an actor dies
     // TODO subscribe when an actor is created from outside
     // TODO an actor created from outside receives last model
-
-    // TODO actors die when model doesn't want them anymore
-    // TODO check an actor is already created
-
-    // TODO two actors receive the same model
 }

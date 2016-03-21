@@ -1,9 +1,13 @@
 package org.granchi.hollywood;
 
+import rx.Subscription;
+import rx.schedulers.Schedulers;
 import rx.subjects.BehaviorSubject;
 import rx.subjects.Subject;
 
 import java.util.Collections;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 /**
  * Hollywood application.
@@ -13,13 +17,18 @@ import java.util.Collections;
  * (possibly) different model that is applied to every actor.
  * <p>
  * Actions are applied in the same thread, so the model is easy to test and understand.
+ * <p>
+ * Subclasses that manipulate Actors or Models from outside the loop (for example, Android views being created by the
+ * S.O.) must coordinate their work with the provided executor.
  *
  * @param <M> type of the Model
  * @param <D> type of the ActorMetadata used to build Actors
  * @author serandel
  */
-// TODO hook actions subscribe to app lifecycle
-public class HollywoodApplication<M extends Model<M, D>, D extends ActorMetadata> {
+public abstract class HollywoodApplication<M extends Model<M, D>, D extends ActorMetadata> {
+    protected final Executor executor;
+    private Subscription loopSubscription;
+
     private M model;
     private final Cast<D, M> cast;
 
@@ -41,39 +50,97 @@ public class HollywoodApplication<M extends Model<M, D>, D extends ActorMetadata
 
         this.model = initialModel;
 
-        // TODO share?
         models = BehaviorSubject.create();
 
         cast = castFactory.build(models);
         if (cast == null) {
             throw new IllegalStateException("Cast null");
         }
+
+        // Every cycle goes in the same thread
+        executor = Executors.newSingleThreadExecutor();
     }
 
     /**
      * Runs the application.
      * <p>
-     * It enters a infinite loop until Model becomes null.
+     * Creates a new Thread that executes action->model->actor cycles in a loop until Model becomes null or no Actors
+     * are wanted by the Model.
      */
     public void run() {
-        // Have to create the initial set of Actors
-        cast.ensureCast(model.getActors());
+        executor.execute(() -> {
+            // Have to create the initial set of Actors
+            cast.ensureCast(model.getActors());
 
-        // Feed them initial model
-        models.onNext(model);
-
-        // And from now on...
-        cast.getActions().subscribe(action -> {
-            model = model.actUpon(action);
-
-            // Ensure every actor exists, and no one more
-            // Cast will complete its getActions Observable when given an empty Actor set, so this subscription will
-            // end
-            cast.ensureCast(model == null ? Collections.emptySet() : model.getActors());
-
+            // Feed them initial model
             models.onNext(model);
 
-            // TODO something with null model or empty actors
-        }, Throwable::printStackTrace);
+            // And from now on...
+            loopSubscription = cast.getActions().subscribeOn(Schedulers.from(executor)).subscribe(action -> {
+                model = model.actUpon(action);
+
+                // Ensure every actor exists, and no one more
+                // Cast will complete its getActions Observable when given an empty Actor set, so this subscription will
+                // end
+                cast.ensureCast(model == null ? Collections.emptySet() : model.getActors());
+
+                // Unrecoverable state, there is no model or no actors to react to it
+                if (model == null || model.getActors().isEmpty()) {
+                    if (model == null) {
+                        logInfo("Ending cycle: model null");
+                    } else {
+                        logInfo("Ending cycle: no actors");
+                    }
+
+                    // We're done!
+                    models.onCompleted();
+                    loopSubscription.unsubscribe();
+                } else {
+                    models.onNext(model);
+                }
+            }, throwable -> {
+                logError("Throwable during action->model->actor cycle", throwable);
+            });
+        });
     }
+
+    /**
+     * Says if the application is currently running.
+     *
+     * If not, it can be that run() hasn't been invoked or that the cycle has ended.
+     *
+     * @return if the application is running
+     */
+    public boolean isRunning() {
+        return loopSubscription != null && !loopSubscription.isUnsubscribed();
+    }
+
+    /**
+     * Logs a warning message.
+     *
+     * @param msg warning message
+     */
+    protected abstract void logWarning(String msg);
+
+    /**
+     * Logs an error message, with an attached throwable.
+     *
+     * @param msg       error message
+     * @param throwable throwable
+     */
+    protected abstract void logError(String msg, Throwable throwable);
+
+    /**
+     * Logs a info message.
+     *
+     * @param msg info message
+     */
+    protected abstract void logInfo(String msg);
+
+    /**
+     * Logs a debug message.
+     *
+     * @param msg debug message
+     */
+    protected abstract void logDebug(String msg);
 }
