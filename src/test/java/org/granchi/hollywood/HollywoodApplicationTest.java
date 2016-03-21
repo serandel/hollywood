@@ -9,6 +9,7 @@ import rx.Observable;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import static com.google.common.truth.Truth.assertThat;
 import static org.mockito.Mockito.*;
@@ -116,7 +117,8 @@ public class HollywoodApplicationTest {
     @Test(timeout = 1000)
     @SuppressWarnings("unchecked")
     public void testBasicCycle() throws Exception {
-        Observable<Action> actions = Observable.just(action, action2, action3);
+        // Delay is so isRunning will get the app still running
+        Observable<Action> actions = Observable.just(action, action2, action3).delay(100, TimeUnit.MILLISECONDS);
         Set<ActorMetadata> metadata = new HashSet<>(Collections.singletonList(actorMetadata));
 
         when(cast.getActions()).thenReturn(actions);
@@ -129,7 +131,10 @@ public class HollywoodApplicationTest {
         when(model2.getActors()).thenReturn(metadata);
         when(model3.getActors()).thenReturn(metadata);
 
-        new MockHollywoodApplication(model, models -> cast).run();
+        MockHollywoodApplication app = new MockHollywoodApplication(model, models -> cast);
+        app.run();
+
+        assertThat(app.isRunning());
 
         // Should be enough
         Thread.sleep(250);
