@@ -1,5 +1,6 @@
 package org.granchi.hollywood;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -36,18 +37,42 @@ public class CompositeModel<D extends ActorMetadata> implements Model<D> {
 
     @Override
     public Model<D> actUpon(Action action) {
-        Set<Model<D>> resultSubModels = new HashSet<>();
+        Set<Model<D>> resultModels = new HashSet<>();
 
         for (Model<D> model : models) {
-            resultSubModels.add(model.actUpon(action));
+            Model<D> resultModel = model.actUpon(action);
+
+            if (resultModel != null) {
+                if (resultModel instanceof CompositeModel) {
+                    resultModels.addAll(((CompositeModel<D>) resultModel).getModels());
+                } else {
+                    resultModels.add(resultModel);
+                }
+            }
         }
 
-        // I hate Java generics sometimes...
-        return new CompositeModel<D>(resultSubModels);
+        return resultModels.isEmpty() ? null : new CompositeModel<>(resultModels);
+    }
+
+    /**
+     * Gets all subModels.
+     *
+     * Only intended to flatten CompositeModel results.
+     *
+     * @return Models
+     */
+    private Collection<? extends Model<D>> getModels() {
+        return models;
     }
 
     @Override
     public Set<D> getActors() {
-        return null;
+        Set<D> actors = new HashSet<>();
+
+        for (Model<D> model : models) {
+            actors.addAll(model.getActors());
+        }
+
+        return actors;
     }
 }

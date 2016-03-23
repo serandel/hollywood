@@ -67,9 +67,29 @@ public class CompositeModelTest {
         verify(model5).actUpon(action);
     }
 
-    // TODO if a model returns a composite model, it's aggregated
+    @Test
+    public void testCompositeResultModelsAreAggregatedSoNoDuplications() {
+        when(model1.actUpon(action)).thenReturn(new CompositeModel<>(new HashSet<>(Arrays.asList(model3, model4))));
+        when(model2.actUpon(action)).thenReturn(new CompositeModel<>(new HashSet<>(Arrays.asList(model3, model5))));
 
-    // TODO null si everyone returns null
+        CompositeModel<ActorMetadata> compositeModel = new CompositeModel<>(new HashSet<>(Arrays.asList(model1, model2)));
+        compositeModel.actUpon(action).actUpon(action);
+
+        verify(model3).actUpon(action);
+        verify(model4).actUpon(action);
+        verify(model5).actUpon(action);
+    }
+
+    @Test
+    public void testNoSubModelsReturnNull() {
+        CompositeModel<ActorMetadata> compositeModel = new CompositeModel<>(
+                new HashSet<>(Arrays.asList(model1, model2)));
+        Model<ActorMetadata> resultModel = compositeModel.actUpon(action);
+
+        assertThat(resultModel).isNull();
+    }
 
     // TODO operador para sacar un modelo de un composite model
+
+    // TODO incompatible actorMetadata? single instance, same class different properties
 }
