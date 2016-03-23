@@ -21,18 +21,17 @@ import java.util.concurrent.Executors;
  * Subclasses that manipulate Actors or Models from outside the loop (for example, Android views being created by the
  * S.O.) must coordinate their work with the provided executor.
  *
- * @param <M> type of the Model
  * @param <D> type of the ActorMetadata used to build Actors
  * @author serandel
  */
-public abstract class HollywoodApplication<M extends Model<M, D>, D extends ActorMetadata> {
+public abstract class HollywoodApplication<D extends ActorMetadata> {
     protected final Executor executor;
     private Subscription loopSubscription;
 
-    private M model;
-    private final Cast<D, M> cast;
+    private Model<D> model;
+    private final Cast<D> cast;
 
-    private Subject<M, M> models;
+    private Subject<Model<D>, Model<D>> models;
 
     /**
      * Constructor.
@@ -40,7 +39,7 @@ public abstract class HollywoodApplication<M extends Model<M, D>, D extends Acto
      * @param initialModel initial Model, can't be null
      * @param castFactory  factory for Cast, can't be null
      */
-    public HollywoodApplication(M initialModel, Cast.Factory<D, M> castFactory) {
+    public HollywoodApplication(Model<D> initialModel, Cast.Factory<D> castFactory) {
         if (initialModel == null) {
             throw new NullPointerException();
         }

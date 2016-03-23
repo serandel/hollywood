@@ -16,12 +16,9 @@ import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class HollywoodApplicationTest {
-    private interface MockModel extends Model<MockModel, ActorMetadata> {
-    }
-
-    private class MockHollywoodApplication extends HollywoodApplication<MockModel, ActorMetadata> {
-        public MockHollywoodApplication(MockModel initialModel,
-                                        Cast.Factory<ActorMetadata, MockModel> castFactory) {
+    private class MockHollywoodApplication extends HollywoodApplication<ActorMetadata> {
+        public MockHollywoodApplication(Model<ActorMetadata> initialModel,
+                                        Cast.Factory<ActorMetadata> castFactory) {
             super(initialModel, castFactory);
         }
 
@@ -47,10 +44,10 @@ public class HollywoodApplicationTest {
     }
 
     @Mock
-    private MockModel model, model2, model3;
+    private Model<ActorMetadata> model, model2, model3;
 
     @Mock
-    private Cast.Factory<ActorMetadata, MockModel> castFactory;
+    private Cast.Factory<ActorMetadata> castFactory;
 
     @Mock
     private Cast cast;

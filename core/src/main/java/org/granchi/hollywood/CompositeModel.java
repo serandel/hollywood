@@ -10,8 +10,8 @@ import java.util.Set;
  *
  * @author serandel
  */
-public class CompositeModel<M extends Model<M, D>, D extends ActorMetadata> implements Model<M, D> {
-    private Set<Model<? super M, ? super D>> models;
+public class CompositeModel<D extends ActorMetadata> implements Model<D> {
+    private Set<Model<D>> models;
 
     /**
      * Constructor.
@@ -20,19 +20,30 @@ public class CompositeModel<M extends Model<M, D>, D extends ActorMetadata> impl
      *
      * @param initialModels initial models
      */
-    public CompositeModel(Set<Model<? super M, ? super D>> initialModels) {
+    public CompositeModel(Set<Model<D>> initialModels) {
         if (initialModels.size() == 0) {
             throw new IllegalArgumentException();
         }
 
-        models.addAll(initialModels);
+        for (Model<D> model : initialModels) {
+            if (model == null) {
+                throw new NullPointerException();
+            }
+        }
+
+        models = new HashSet<>(initialModels);
     }
 
     @Override
-    public M actUpon(Action action) {
-        Set<Model<? super M, ? super D>> resultSubModels = new HashSet<>();
+    public Model<D> actUpon(Action action) {
+        Set<Model<D>> resultSubModels = new HashSet<>();
 
-        return new CompositeModel<M, D>(resultSubModels);
+        for (Model<D> model : models) {
+            resultSubModels.add(model.actUpon(action));
+        }
+
+        // I hate Java generics sometimes...
+        return new CompositeModel<D>(resultSubModels);
     }
 
     @Override

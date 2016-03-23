@@ -18,21 +18,18 @@ import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class SingleInstanceCastTest {
-    private interface MockModel extends Model<MockModel, SingleInstanceActorMetadata> {
-    }
-
     // Different subclasses, so the instances get registered correctly
-    private interface ActorSub1 extends Actor<MockModel> {
+    private interface ActorSub1 extends Actor<SingleInstanceActorMetadata> {
     }
 
-    private interface ActorSub2 extends Actor<MockModel> {
+    private interface ActorSub2 extends Actor<SingleInstanceActorMetadata> {
     }
 
     @Mock
-    private MockModel model;
+    private Model<ActorMetadata> model;
 
     @Mock
-    private Actor.Factory<MockModel, SingleInstanceActorMetadata> actorFactory;
+    private Actor.Factory<SingleInstanceActorMetadata> actorFactory;
 
     @Mock
     private ActorSub1 actor;
@@ -52,12 +49,12 @@ public class SingleInstanceCastTest {
 
     @Test(expected = NullPointerException.class)
     public void testCantHaveANullActorFactory() {
-        new SingleInstanceCast<>(null, Observable.<MockModel>empty());
+        new SingleInstanceCast(null, Observable.<Model<SingleInstanceActorMetadata>>empty());
     }
 
     @Test(expected = NullPointerException.class)
     public void testCantHaveANullModelsObservable() {
-        new SingleInstanceCast<>(actorFactory, null);
+        new SingleInstanceCast(actorFactory, null);
     }
 
     @Test
@@ -67,7 +64,7 @@ public class SingleInstanceCastTest {
 
         when(actorFactory.create(metadata)).thenReturn(actor);
 
-        SingleInstanceCast<MockModel> cast = new SingleInstanceCast<>(actorFactory, Observable.empty());
+        SingleInstanceCast cast = new SingleInstanceCast(actorFactory, Observable.empty());
 
         assertThat(!cast.containsActorFrom(metadata));
 
@@ -85,7 +82,7 @@ public class SingleInstanceCastTest {
 
         when(actorFactory.create(metadata)).thenReturn(actor);
 
-        SingleInstanceCast<MockModel> cast = new SingleInstanceCast<>(actorFactory, Observable.empty());
+        SingleInstanceCast cast = new SingleInstanceCast(actorFactory, Observable.empty());
 
         cast.ensureCast(metadatas);
         cast.ensureCast(metadatas);
@@ -103,7 +100,7 @@ public class SingleInstanceCastTest {
         when(actorFactory.create(metadata)).thenReturn(actor);
         when(actorFactory.create(metadata2)).thenReturn(actor2);
 
-        SingleInstanceCast<MockModel> cast = new SingleInstanceCast<>(actorFactory, Observable.empty());
+        SingleInstanceCast cast = new SingleInstanceCast(actorFactory, Observable.empty());
 
         cast.ensureCast(metadatas);
 
@@ -121,7 +118,7 @@ public class SingleInstanceCastTest {
         when(actorFactory.create(metadata)).thenReturn(actor);
         when(actorFactory.create(metadata2)).thenReturn(actor2);
 
-        SingleInstanceCast<MockModel> cast = new SingleInstanceCast<>(actorFactory, Observable.empty());
+        SingleInstanceCast cast = new SingleInstanceCast(actorFactory, Observable.empty());
 
         cast.ensureCast(metadatas);
 

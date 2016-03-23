@@ -14,14 +14,11 @@ import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class CompositeModelTest {
-    private interface MockModel extends Model<MockModel, ActorMetadata> {
-    }
-
     @Mock
     private Action action;
 
     @Mock
-    private MockModel model1, model2, model3, model4, model5;
+    private Model<ActorMetadata> model1, model2, model3, model4, model5;
 
     @Mock
     private ActorMetadata metadata1, metadata2, metadata3, metadata4;
@@ -47,10 +44,10 @@ public class CompositeModelTest {
         when(model3.actUpon(action)).thenReturn(model5);
         when(model4.actUpon(action)).thenReturn(model5);
 
-        CompositeModel<MockModel, ActorMetadata> compositeModel = new CompositeModel<>(
+        CompositeModel<ActorMetadata> compositeModel = new CompositeModel<>(
                 new HashSet<>(Arrays.asList(model1, model2)));
-        MockModel compositeModel2 = compositeModel.actUpon(action);
-        MockModel compositeModel3 = compositeModel2.actUpon(action);
+        Model<ActorMetadata> compositeModel2 = compositeModel.actUpon(action);
+        Model<ActorMetadata> compositeModel3 = compositeModel2.actUpon(action);
         compositeModel3.actUpon(action);
 
         verify(model1).actUpon(action);
@@ -73,4 +70,6 @@ public class CompositeModelTest {
     // TODO if a model returns a composite model, it's aggregated
 
     // TODO null si everyone returns null
+
+    // TODO operador para sacar un modelo de un composite model
 }

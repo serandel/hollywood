@@ -15,10 +15,11 @@ import rx.Observable;
  * <li>external server</li>
  * </ul>
  *
- * @param <M> type of model that can be applied
+ * @param <D> type of metadata the Actor is built from
+ *
  * @author serandel
  */
-public interface Actor<M extends Model> {
+public interface Actor<D extends ActorMetadata> {
     /**
      * Return an Observable with all future Actions.
      *
@@ -33,22 +34,21 @@ public interface Actor<M extends Model> {
      *
      * @param models Models
      */
-    void subscribeTo(Observable<M> models);
+    void subscribeTo(Observable<Model<D>> models);
 
     /**
      * Factory for creating Actors.
      *
      * @param <D> type of ActorMetadata it uses for building and identifying Actors
-     * @param <M> type of Model the Actors can accept
      */
     @FunctionalInterface
-    interface Factory<M extends Model<M, D>, D extends ActorMetadata> {
+    interface Factory<D extends ActorMetadata> {
         /**
          * Create an Actor, subscribed to an Observable of Models.
          *
          * @param metadata metadata
          * @return Actor
          */
-        Actor<M> create(D metadata);
+        Actor<D> create(D metadata);
     }
 }
