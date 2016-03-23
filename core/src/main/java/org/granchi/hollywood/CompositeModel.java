@@ -61,7 +61,7 @@ public class CompositeModel<D extends ActorMetadata> implements Model<D> {
      *
      * @return Models
      */
-    private Collection<? extends Model<D>> getModels() {
+    Collection<? extends Model<D>> getModels() {
         return models;
     }
 
