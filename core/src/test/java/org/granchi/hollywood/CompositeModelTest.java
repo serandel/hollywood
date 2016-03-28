@@ -89,7 +89,5 @@ public class CompositeModelTest {
         assertThat(resultModel).isNull();
     }
 
-    // TODO operador para sacar un modelo de un composite model
-
     // TODO incompatible actorMetadata? single instance, same class different properties
 }
