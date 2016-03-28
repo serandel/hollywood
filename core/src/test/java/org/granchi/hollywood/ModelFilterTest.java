@@ -77,7 +77,7 @@ public class ModelFilterTest {
     @Test
     public void testCompositeModelsCanHaveMultipleWantedModels() {
         Observable.just(new CompositeModel<>(new HashSet<>(
-                Arrays.asList(model2, model3)))).compose(ModelFilter.modelOfType(Model2.class))
+                Arrays.<Model<ActorMetadata>>asList(model2, model3)))).compose(ModelFilter.modelOfType(Model2.class))
                   .subscribe(testSubscriber);
 
         testSubscriber.assertValues(model2, model3);
