@@ -33,13 +33,18 @@ public abstract class HollywoodApplication<D extends ActorMetadata> {
 
     private Subject<Model<D>, Model<D>> models;
 
+    private ModelExceptionHandler<D> exceptionHandler;
+
     /**
      * Constructor.
      *
-     * @param initialModel initial Model, can't be null
-     * @param castFactory  factory for Cast, can't be null
+     * @param initialModel     initial Model, can't be null
+     * @param castFactory      factory for Cast, can't be null
+     * @param exceptionHandler handler for Exceptions during Model.actUpon, can be null to just end the app if it
+     *                         happens
      */
-    public HollywoodApplication(Model<D> initialModel, Cast.Factory<D> castFactory) {
+    public HollywoodApplication(Model<D> initialModel, Cast.Factory<D> castFactory,
+                                ModelExceptionHandler<D> exceptionHandler) {
         if (initialModel == null) {
             throw new NullPointerException();
         }
@@ -48,6 +53,7 @@ public abstract class HollywoodApplication<D extends ActorMetadata> {
         }
 
         this.model = initialModel;
+        this.exceptionHandler = exceptionHandler;
 
         models = BehaviorSubject.create();
 
@@ -76,7 +82,16 @@ public abstract class HollywoodApplication<D extends ActorMetadata> {
 
             // And from now on...
             loopSubscription = cast.getActions().subscribeOn(Schedulers.from(executor)).subscribe(action -> {
-                model = model.actUpon(action);
+                try {
+                    model = model.actUpon(action);
+                } catch (Exception e) {
+                    if (exceptionHandler == null) {
+                        model = null;
+                        logError("Exception during model.actUpon", e);
+                    } else {
+                        model = exceptionHandler.onException(model, action, e);
+                    }
+                }
 
                 // Ensure every actor exists, and no one more
                 // Cast will complete its getActions Observable when given an empty Actor set, so this subscription will
@@ -105,7 +120,7 @@ public abstract class HollywoodApplication<D extends ActorMetadata> {
 
     /**
      * Says if the application is currently running.
-     *
+     * <p>
      * If not, it can be that run() hasn't been invoked or that the cycle has ended.
      *
      * @return if the application is running
