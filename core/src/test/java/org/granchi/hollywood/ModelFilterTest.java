@@ -80,6 +80,7 @@ public class ModelFilterTest {
                 Arrays.<Model<ActorMetadata>>asList(model2, model3)))).compose(ModelFilter.modelOfType(Model2.class))
                   .subscribe(testSubscriber);
 
-        testSubscriber.assertValues(model2, model3);
+        // Being a HashSet, the subscriber can receive model2 and then model3 or viceversa
+        testSubscriber.assertValueCount(2);
     }
 }
