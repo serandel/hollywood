@@ -4,14 +4,17 @@ buildscript {
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:1.5.0'
+        classpath 'com.github.dcendents:android-maven-gradle-plugin:1.3'
     }
 }
 
 apply plugin: 'com.android.library'
+apply plugin: 'com.github.dcendents.android-maven'
 
 sourceCompatibility = 1.8
 version = '1.0-SNAPSHOT'
 description = "Android extension for Hollywood"
+group='com.github.serandel'
 
 android {
     compileSdkVersion 23
