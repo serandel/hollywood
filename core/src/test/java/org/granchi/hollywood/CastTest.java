@@ -16,19 +16,16 @@ import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class CastTest {
-    private interface MockModel extends Model<MockModel, ActorMetadata> {
-    }
+    private class MinimumCast extends Cast<ActorMetadata> {
+        final Map<ActorMetadata, Actor<ActorMetadata>> actors = new HashMap<>();
 
-    private class MinimumCast extends Cast<ActorMetadata, MockModel> {
-        final Map<ActorMetadata, Actor<MockModel>> actors = new HashMap<>();
-
-        protected MinimumCast(Observable<MockModel> models) {
+        protected MinimumCast(Observable<Model<ActorMetadata>> models) {
             super(models);
         }
 
         @Override
-        protected Actor<MockModel> buildActorFrom(ActorMetadata metadata) {
-            Actor<MockModel> actor = actorFactory.create(metadata);
+        protected Actor<ActorMetadata> buildActorFrom(ActorMetadata metadata) {
+            Actor<ActorMetadata> actor = actorFactory.create(metadata);
             actors.put(metadata, actor);
             return actor;
         }
@@ -39,18 +36,18 @@ public class CastTest {
         }
 
         @Override
-        protected Collection<Actor<MockModel>> getActors() {
+        protected Collection<Actor<ActorMetadata>> getActors() {
             return actors.values();
         }
 
         @Override
-        protected boolean isActorFrom(Actor<MockModel> actor, ActorMetadata metadata) {
+        protected boolean isActorFrom(Actor<ActorMetadata> actor, ActorMetadata metadata) {
             return actors.containsKey(metadata) && (actors.get(metadata) == actor);
         }
 
         @Override
-        protected void remove(Actor actor) {
-            Iterator<Map.Entry<ActorMetadata, Actor<MockModel>>> it = actors.entrySet().iterator();
+        protected void remove(Actor<ActorMetadata> actor) {
+            Iterator<Map.Entry<ActorMetadata, Actor<ActorMetadata>>> it = actors.entrySet().iterator();
 
             while(it.hasNext()) {
                 if (it.next().getValue() == actor) {
@@ -62,16 +59,16 @@ public class CastTest {
     }
 
     @Mock
-    private MockModel model;
+    private Model<ActorMetadata> model;
 
     @Mock
-    private Actor.Factory<MockModel, ActorMetadata> actorFactory;
+    private Actor.Factory<ActorMetadata> actorFactory;
 
     @Mock
     private ActorMetadata metadata, metadata2;
 
     @Mock
-    private Actor<MockModel> actor, actor2;
+    private Actor<ActorMetadata> actor, actor2;
 
     @Mock
     private Action action, action2, action3;
@@ -80,7 +77,7 @@ public class CastTest {
     @SuppressWarnings("unchecked")
     public void testPropagatesModels() {
         Set<ActorMetadata> metadatas = new HashSet<>(Arrays.asList(metadata, metadata2));
-        Subject<MockModel, MockModel> models = BehaviorSubject.create();
+        Subject<Model<ActorMetadata>, Model<ActorMetadata>> models = BehaviorSubject.create();
 
         when(actorFactory.create(metadata)).thenReturn(actor);
         when(actorFactory.create(metadata2)).thenReturn(actor2);
@@ -88,8 +85,8 @@ public class CastTest {
         when(actor.getActions()).thenReturn(Observable.empty());
         when(actor2.getActions()).thenReturn(Observable.empty());
 
-        TestSubscriber<MockModel> testSubscriber = new TestSubscriber<>();
-        TestSubscriber<MockModel> testSubscriber2 = new TestSubscriber<>();
+        TestSubscriber<Model<ActorMetadata>> testSubscriber = new TestSubscriber<>();
+        TestSubscriber<Model<ActorMetadata>> testSubscriber2 = new TestSubscriber<>();
 
         doAnswer(invocation -> {
             invocation.getArgumentAt(0, Observable.class).subscribe(testSubscriber);
@@ -115,7 +112,7 @@ public class CastTest {
     @Test
     public void testMergesActions() {
         Set<ActorMetadata> metadatas = new HashSet<>(Arrays.asList(metadata, metadata2));
-        Subject<MockModel, MockModel> models = BehaviorSubject.create();
+        Subject<Model<ActorMetadata>, Model<ActorMetadata>> models = BehaviorSubject.create();
 
         when(actor.getActions()).thenReturn(Observable.just(action, action3));
         when(actor2.getActions()).thenReturn(Observable.just(action2));
@@ -137,7 +134,7 @@ public class CastTest {
     @Test
     public void testMergesActionsEvenIfCreatedLater() {
         Set<ActorMetadata> metadatas = new HashSet<>(Collections.singletonList(metadata));
-        Subject<MockModel, MockModel> models = BehaviorSubject.create();
+        Subject<Model<ActorMetadata>, Model<ActorMetadata>> models = BehaviorSubject.create();
 
         when(actor.getActions()).thenReturn(Observable.just(action, action3));
         when(actor2.getActions()).thenReturn(Observable.just(action2));
@@ -164,7 +161,7 @@ public class CastTest {
     public void testDontGetActionsFromRemovedActors() {
         Set<ActorMetadata> metadatas = new HashSet<>(Arrays.asList(metadata, metadata2));
 
-        Subject<MockModel, MockModel> models = BehaviorSubject.create();
+        Subject<Model<ActorMetadata>, Model<ActorMetadata>> models = BehaviorSubject.create();
 
         PublishSubject<Action> actions2 = PublishSubject.create();
 

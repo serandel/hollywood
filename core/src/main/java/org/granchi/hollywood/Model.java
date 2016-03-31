@@ -13,12 +13,10 @@ import java.util.Set;
  * <li>Is ok to return itself from an action, if no change is needed</li>
  * </ul>
  *
- * @param <M> type of Model output by this one; the usual usage will be creating a subclass like <code>public class
- *            MyModel implements Model<MyModel></code>
  * @param <D> type of the ActorMetadata used to build Actors
  * @author serandel
  */
-public interface Model<M extends Model, D extends ActorMetadata> {
+public interface Model<D extends ActorMetadata> {
     /**
      * Generates a new model, from itself and the data contained in an action.
      * <p>
@@ -27,7 +25,7 @@ public interface Model<M extends Model, D extends ActorMetadata> {
      * @param action action, can't be null
      * @return new model
      */
-    M actUpon(Action action);
+    Model<D> actUpon(Action action);
 
     /**
      * Gets the list of Actors the model wants to have in this iteration of the app cycle, as a collection of

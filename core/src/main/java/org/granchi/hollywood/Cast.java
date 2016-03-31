@@ -10,23 +10,22 @@ import java.util.*;
  * Stores all the active Actors, creating or removing them according to the ActorMetadata that the model provides.
  *
  * @param <D> type of ActorMetadata it uses for building and identifying Actors
- * @param <M> type of Model the Actors can accept
  */
-public abstract class Cast<D extends ActorMetadata, M extends Model> {
+public abstract class Cast<D extends ActorMetadata> {
     // It's not necessary to share because it's hot
-    private final Observable<M> models;
+    private final Observable<Model<D>> models;
 
     private final PublishSubject<Action> actions;
-    private final Map<Actor, Subscription> actionsSubscriptions;
+    private final Map<Actor<D>, Subscription> actionsSubscriptions;
 
     /**
      * Constructor.
-     * <p>
+     * <p/>
      * Warning: the Observable for Models should be hot, because it will be subscribed by every possible future Actor
      *
      * @param models Observable for Models
      */
-    protected Cast(Observable<M> models) {
+    protected Cast(Observable<Model<D>> models) {
         if (models == null) {
             throw new NullPointerException();
         }
@@ -42,7 +41,7 @@ public abstract class Cast<D extends ActorMetadata, M extends Model> {
      *
      * @param metadata metadata for creating the actor
      */
-    protected abstract Actor<M> buildActorFrom(D metadata);
+    protected abstract Actor buildActorFrom(D metadata);
 
     /**
      * Check if there is already an Actor built from an specific ActorMetadata.
@@ -54,7 +53,7 @@ public abstract class Cast<D extends ActorMetadata, M extends Model> {
 
     /**
      * Ensures the cast contains every requested Actor and no more.
-     * <p>
+     * <p/>
      * If an Actor has to be created, it is subscribed to the Model Observable.
      *
      * @param metadatas metadata for all the desired Actors
@@ -62,23 +61,23 @@ public abstract class Cast<D extends ActorMetadata, M extends Model> {
     public void ensureCast(Set<D> metadatas) {
         for (D metadata : metadatas) {
             if (!containsActorFrom(metadata)) {
-                Actor<M> actor = buildActorFrom(metadata);
+                Actor<D> actor = buildActorFrom(metadata);
 
                 actor.subscribeTo(models);
 
                 // Can't subscribe directly the subject, or it will complete itself with the first onCompleted
                 Subscription subscription = actor.getActions().subscribe(actions::onNext,
-                        actions::onError);
+                                                                         actions::onError);
                 actionsSubscriptions.put(actor, subscription);
             }
         }
 
         // Remove unwanted ones
-        Collection<Actor<M>> actors = getActors();
+        Collection<Actor<D>> actors = getActors();
         // To avoid ConcurrentModificationException
-        List<Actor<M>> unwanteds = new ArrayList<>();
+        List<Actor> unwanteds = new ArrayList<>();
         if (actors.size() != metadatas.size()) {
-            for (Actor<M> actor : actors) {
+            for (Actor actor : actors) {
                 boolean wanted = false;
 
                 for (D metadata : metadatas) {
@@ -93,7 +92,7 @@ public abstract class Cast<D extends ActorMetadata, M extends Model> {
                 }
             }
 
-            for (Actor<M> actor : unwanteds) {
+            for (Actor actor : unwanteds) {
                 actionsSubscriptions.get(actor).unsubscribe();
                 actionsSubscriptions.remove(actor);
 
@@ -109,7 +108,7 @@ public abstract class Cast<D extends ActorMetadata, M extends Model> {
      *
      * @return Actors
      */
-    protected abstract Collection<Actor<M>> getActors();
+    protected abstract Collection<Actor<D>> getActors();
 
     /**
      * Says if an Actor has been created from a specific Metadata.
@@ -118,14 +117,14 @@ public abstract class Cast<D extends ActorMetadata, M extends Model> {
      * @param metadata Metadata
      * @return if the Actor was created from the Metadata
      */
-    protected abstract boolean isActorFrom(Actor<M> actor, D metadata);
+    protected abstract boolean isActorFrom(Actor<D> actor, D metadata);
 
     /**
      * Removes an Actor from the Cast.
      *
      * @param actor Actor
      */
-    protected abstract void remove(Actor actor);
+    protected abstract void remove(Actor<D> actor);
 
     /**
      * Gives an Observable with Actions from any active Actor in the Cast.
@@ -138,21 +137,20 @@ public abstract class Cast<D extends ActorMetadata, M extends Model> {
 
     /**
      * Factory for creating Casts.
-     * <p>
+     * <p/>
      * It is needed, because we want the application to create the Models observable to give to the Cast in its
      * constructor.
      *
      * @param <D> type of ActorMetadata it uses for building and identifying Actors
-     * @param <M> type of Model the Actors can accept
      */
     @FunctionalInterface
-    public interface Factory<D extends ActorMetadata, M extends Model<M, D>> {
+    public interface Factory<D extends ActorMetadata> {
         /**
          * Create a Cast, subscribed to an Observable of Models.
          *
          * @param models Observable of Models
          * @return Cast
          */
-        Cast<D, M> build(Observable<M> models);
+        Cast<D> build(Observable<Model<D>> models);
     }
 }
