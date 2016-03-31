@@ -11,14 +11,13 @@ buildscript {
 apply plugin: 'com.android.library'
 apply plugin: 'com.github.dcendents.android-maven'
 
-sourceCompatibility = 1.8
 version = '1.0-SNAPSHOT'
 description = "Android extension for Hollywood"
 group='com.github.serandel'
 
 android {
     compileSdkVersion 23
-    buildToolsVersion "23.0.2"
+    buildToolsVersion "24.0.0 rc2"
 
     defaultConfig {
         minSdkVersion 14
