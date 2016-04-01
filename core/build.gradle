@@ -1,18 +1,32 @@
-apply plugin: 'java'
+buildscript {
+    repositories {
+        mavenCentral()
+    }
 
-version = '1.0-SNAPSHOT'
-description = "An opinionated, Android-aware, Java functional reactive framework inspired by Cycle.js"
+    dependencies {
+        classpath 'me.tatarka:gradle-retrolambda:3.2.5'
+    }
+}
+
+
+apply plugin: 'java'
+apply plugin: 'me.tatarka.retrolambda'
 
 sourceCompatibility = 1.8
 
-repositories {
-    mavenCentral()
-    jcenter()
-}
+description = "An opinionated, Android-aware, Java functional reactive framework inspired by Cycle.js"
 
 dependencies {
     compile 'io.reactivex:rxjava:1.1.1'
     testCompile 'junit:junit:4.12'
     testCompile 'org.mockito:mockito-core:2.0.43-beta'
     testCompile 'com.google.truth:truth:0.28'
+}
+
+retrolambda {
+    jdk System.getenv("JAVA_HOME")
+    oldJdk System.getenv("JAVA7_HOME")
+    javaVersion JavaVersion.VERSION_1_7
+    defaultMethods false
+    incremental true
 }
