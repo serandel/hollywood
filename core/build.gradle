@@ -12,7 +12,7 @@ buildscript {
 apply plugin: 'java'
 apply plugin: 'me.tatarka.retrolambda'
 
-sourceCompatibility = 1.8
+sourceCompatibility = JavaVersion.VERSION_1_8
 
 description = "An opinionated, Android-aware, Java functional reactive framework inspired by Cycle.js"
 

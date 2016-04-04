@@ -1,9 +1,9 @@
 package org.granchi.hollywood;
 
-import rx.Observable;
-
 import java.util.Collection;
 import java.util.HashMap;
+
+import rx.Observable;
 
 /**
  * Cast of Actors where there can be no more than one instance of each specific Actor class.
