@@ -9,6 +9,9 @@ import org.granchi.hollywood.SingleInstanceActorMetadata;
 import org.granchi.hollywood.SingleInstanceCast;
 import org.granchi.hollywood.android.HollywoodAndroidApplication;
 import org.granchi.hollywood.android.HollywoodAndroidApplicationCompanion;
+import org.granchi.whatnow.framework.dagger.DaggerWhatNowComponent;
+import org.granchi.whatnow.framework.dagger.WhatNowComponent;
+import org.granchi.whatnow.framework.dagger.WhatNowModule;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -20,6 +23,19 @@ import java.util.Set;
  * @author serandel
  */
 public class WhatNowApplication extends HollywoodAndroidApplication {
+    // Dagger 2 component
+    private WhatNowComponent component;
+
+    @Override
+    public void onCreate() {
+        component = DaggerWhatNowComponent.builder()
+                .whatNowModule(new WhatNowModule(this))
+                .build();
+        component.inject(this);
+
+        super.onCreate();
+    }
+
     @Override
     protected HollywoodAndroidApplicationCompanion createHollywoodCompanion() {
         Model<SingleInstanceActorMetadata> initialModel = new Model<SingleInstanceActorMetadata>() {
@@ -47,7 +63,7 @@ public class WhatNowApplication extends HollywoodAndroidApplication {
             return model;
         };
 
-        return new HollywoodAndroidApplicationCompanion(initialModel, castFactory, exceptionHandler);
+        return new HollywoodAndroidApplicationCompanion(this, initialModel, castFactory, exceptionHandler);
     }
 
     @Override
