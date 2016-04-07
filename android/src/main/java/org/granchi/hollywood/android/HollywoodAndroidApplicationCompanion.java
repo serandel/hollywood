@@ -15,15 +15,25 @@ import timber.log.Timber;
  */
 // TODO creation parameters
 public class HollywoodAndroidApplicationCompanion extends HollywoodApplication<SingleInstanceActorMetadata> {
+    private final HollywoodAndroidApplication app;
+
     /**
      * Constructor.
      *
+     * @param app              HollywoodAndroidApplication, can't be null
      * @param initialModel     initial Model, can't be null
      * @param castFactory      factory for Cast, can't be null
      * @param exceptionHandler handler for Exceptions during Model.actUpon, can be null to just end the app if it
      */
-    public HollywoodAndroidApplicationCompanion(Model<SingleInstanceActorMetadata> initialModel, Cast.Factory<SingleInstanceActorMetadata> castFactory, ModelExceptionHandler<SingleInstanceActorMetadata> exceptionHandler) {
+    public HollywoodAndroidApplicationCompanion(HollywoodAndroidApplication app, Model<SingleInstanceActorMetadata> initialModel, Cast.Factory<SingleInstanceActorMetadata> castFactory, ModelExceptionHandler<SingleInstanceActorMetadata> exceptionHandler) {
         super(initialModel, castFactory, exceptionHandler);
+
+        if (app == null) {
+            throw new NullPointerException();
+        }
+
+        // No logError should happen in the constructor, it can wait till run()
+        this.app = app;
     }
 
     @Override
@@ -36,7 +46,7 @@ public class HollywoodAndroidApplicationCompanion extends HollywoodApplication<S
     protected void logError(String msg, Throwable throwable) {
         Timber.e(throwable, msg);
 
-        HollywoodAndroidApplication.getInstance().showError(msg);
+        app.showError(msg);
     }
 
     @Override

@@ -17,18 +17,11 @@ import timber.log.Timber;
  * @author serandel
  */
 public abstract class HollywoodAndroidApplication extends Application {
-    private static HollywoodAndroidApplication instance;
     private HollywoodAndroidApplicationCompanion hollywoodApp;
-
-    public static HollywoodAndroidApplication getInstance() {
-        return instance;
-    }
 
     @Override
     public void onCreate() {
         super.onCreate();
-
-        instance = this;
 
         initializeLogging();
 
