@@ -1,19 +1,19 @@
 package org.granchi.whatnow;
 
+import java.util.Collections;
+import java.util.List;
+
 import timber.log.Timber;
 
 /**
- * Custom Application class for the app, with logging enabled.
+ * Custom Application class for the debug build variant of the app, with logging enabled.
  *
  * @author serandel
  */
 public class DebugWhatNowApplication extends WhatNowApplication {
     @Override
-    public void onCreate() {
-        // TODO just change for a custom Dagger module and, if it returns Trees, initializes Timber
-        Timber.plant(new Timber.DebugTree());
-        Timber.i("Logging enabled");
-
-        super.onCreate();
+    protected List<Timber.Tree> getLoggingTrees() {
+        // TODO get it from dagger
+        return Collections.singletonList(new Timber.DebugTree());
     }
 }
