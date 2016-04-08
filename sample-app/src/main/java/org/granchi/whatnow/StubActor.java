@@ -22,6 +22,6 @@ public class StubActor implements Actor<SingleInstanceActorMetadata> {
     @Override
     public void subscribeTo(Observable<Model<SingleInstanceActorMetadata>> models) {
         // Very well
-        models.subscribe(model -> Timber.i("Modelo recibido"));
+        models.subscribe(model -> Timber.i("Model received"));
     }
 }

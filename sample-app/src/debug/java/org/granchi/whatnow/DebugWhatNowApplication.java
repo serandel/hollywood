@@ -1,5 +1,6 @@
 package org.granchi.whatnow;
 
+import org.granchi.hollywood.android.HollywoodAndroidApplication;
 import org.granchi.whatnow.framework.dagger.DaggerDebugWhatNowComponent;
 import org.granchi.whatnow.framework.dagger.DebugWhatNowComponent;
 import org.granchi.whatnow.framework.dagger.DebugWhatNowModule;
@@ -18,17 +19,15 @@ import timber.log.Timber;
 public class DebugWhatNowApplication extends WhatNowApplication {
     @Inject
     List<Timber.Tree> loggingTrees;
-    // Dagger 2 component
-    private DebugWhatNowComponent component;
 
-    @Override
-    public void onCreate() {
-        component = DaggerDebugWhatNowComponent.builder()
+    /**
+     * Inject the instance with all the dependencies from a Dagger 2 component
+     */
+    protected void injectDependencies() {
+        DaggerDebugWhatNowComponent.builder()
                 .debugWhatNowModule(new DebugWhatNowModule(this))
-                .build();
-        component.inject(this);
-
-        super.onCreate();
+                .build()
+                .inject(this);
     }
 
     @Override
