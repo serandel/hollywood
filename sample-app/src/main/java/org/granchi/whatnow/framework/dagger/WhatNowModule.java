@@ -5,14 +5,18 @@ import android.app.Application;
 import org.granchi.hollywood.Action;
 import org.granchi.hollywood.Actor;
 import org.granchi.hollywood.Cast;
+import org.granchi.hollywood.CompositeModel;
 import org.granchi.hollywood.Model;
 import org.granchi.hollywood.ModelExceptionHandler;
 import org.granchi.hollywood.SingleInstanceActorMetadata;
 import org.granchi.hollywood.SingleInstanceCast;
 import org.granchi.hollywood.android.HollywoodAndroidApplicationCompanion;
 import org.granchi.whatnow.StubActor;
+import org.granchi.whatnow.TasksModel;
 import org.granchi.whatnow.WhatNowApplication;
+import org.granchi.whatnow.WhatNowPreferencesModel;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -44,7 +48,11 @@ public class WhatNowModule {
     }
 
     @Provides
-    Model<SingleInstanceActorMetadata> provideInitialModel() {
+    Model<SingleInstanceActorMetadata> provideInitialModel(TasksModel tasksModel,
+                                                           WhatNowPreferencesModel preferencesModel) {
+        return new CompositeModel<>(new HashSet<>(Arrays.asList(tasksModel, preferencesModel)));
+
+
         return new Model<SingleInstanceActorMetadata>() {
             @Override
             public Model<SingleInstanceActorMetadata> actUpon(Action action) {
