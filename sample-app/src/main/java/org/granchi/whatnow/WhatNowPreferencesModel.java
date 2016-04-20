@@ -1,5 +1,7 @@
 package org.granchi.whatnow;
 
+import org.granchi.hollywood.android.preferences.SharedPreferencesModel;
+
 import javax.inject.Inject;
 
 /**
