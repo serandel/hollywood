@@ -14,6 +14,13 @@ import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class CompositeModelTest {
+
+    // TODO array null
+    // TODO varargs vacio
+    // TODO array con null
+    // TODO no se puede modificar un getModels
+
+
     @Mock
     private Action action;
 
@@ -25,7 +32,7 @@ public class CompositeModelTest {
 
     @Test(expected = NullPointerException.class)
     public void testCantHaveNullModelsSet() {
-        new CompositeModel<>(null);
+        new CompositeModel<>((Model<SingleInstanceActorMetadata>[]) null);
     }
 
     @Test(expected = NullPointerException.class)
@@ -69,10 +76,16 @@ public class CompositeModelTest {
 
     @Test
     public void testCompositeResultModelsAreAggregatedSoNoDuplications() {
-        when(model1.actUpon(action)).thenReturn(new CompositeModel<>(new HashSet<>(Arrays.asList(model3, model4))));
-        when(model2.actUpon(action)).thenReturn(new CompositeModel<>(new HashSet<>(Arrays.asList(model3, model5))));
+        when(model1.actUpon(action)).thenReturn(new CompositeModel<>(new HashSet<>(Arrays.asList(
+                model3,
+                model4))));
+        when(model2.actUpon(action)).thenReturn(new CompositeModel<>(new HashSet<>(Arrays.asList(
+                model3,
+                model5))));
 
-        CompositeModel<ActorMetadata> compositeModel = new CompositeModel<>(new HashSet<>(Arrays.asList(model1, model2)));
+        CompositeModel<ActorMetadata>
+                compositeModel =
+                new CompositeModel<>(new HashSet<>(Arrays.asList(model1, model2)));
         compositeModel.actUpon(action).actUpon(action);
 
         verify(model3).actUpon(action);

@@ -14,9 +14,6 @@ import org.granchi.whatnow.TasksModel;
 import org.granchi.whatnow.WhatNowApplication;
 import org.granchi.whatnow.WhatNowPreferencesModel;
 
-import java.util.Arrays;
-import java.util.HashSet;
-
 import dagger.Module;
 import dagger.Provides;
 
@@ -46,7 +43,7 @@ public class WhatNowModule {
     @Provides
     Model<SingleInstanceActorMetadata> provideInitialModel(TasksModel tasksModel,
                                                            WhatNowPreferencesModel preferencesModel) {
-        return new CompositeModel<>(new HashSet<>(Arrays.asList(tasksModel, preferencesModel)));
+        return new CompositeModel<>(tasksModel, preferencesModel);
     }
 
     @Provides
