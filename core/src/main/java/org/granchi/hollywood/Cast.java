@@ -58,7 +58,7 @@ public abstract class Cast<D extends ActorMetadata> {
      *
      * @param metadatas metadata for all the desired Actors
      */
-    public void ensureCast(Set<D> metadatas) {
+    public void ensureCast(Collection<D> metadatas) {
         for (D metadata : metadatas) {
             if (!containsActorFrom(metadata)) {
                 Actor<D> actor = buildActorFrom(metadata);

@@ -17,7 +17,7 @@ import java.util.Set;
  * @author serandel
  */
 public class CompositeModel<D extends ActorMetadata> implements Model<D> {
-    private List<Model<D>> models;
+    private Set<Model<D>> models;
 
 
     /**
@@ -41,7 +41,10 @@ public class CompositeModel<D extends ActorMetadata> implements Model<D> {
      * @param initialModels initial models
      */
     public CompositeModel(Collection<Model<D>> initialModels) {
-        if (initialModels == null || initialModels.size() == 0) {
+        if (initialModels == null) {
+            throw new NullPointerException();
+        }
+        if (initialModels.size() == 0) {
             throw new IllegalArgumentException();
         }
 
@@ -51,7 +54,7 @@ public class CompositeModel<D extends ActorMetadata> implements Model<D> {
             }
         }
 
-        models = new ArrayList<>(initialModels);
+        models = new HashSet<>(initialModels);
     }
 
     @Override
@@ -82,12 +85,13 @@ public class CompositeModel<D extends ActorMetadata> implements Model<D> {
      *
      * @return Models
      */
-    Collection<? extends Model<D>> getModels() {
+    Collection<Model<D>> getModels() {
         return Collections.unmodifiableCollection(models);
     }
 
     @Override
-    public Set<D> getActors() {
+    public Collection<D> getActors() {
+        // We'll avoid duplicates
         Set<D> actors = new HashSet<>();
 
         for (Model<D> model : models) {
@@ -95,5 +99,24 @@ public class CompositeModel<D extends ActorMetadata> implements Model<D> {
         }
 
         return actors;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof CompositeModel)) {
+            return false;
+        }
+
+        CompositeModel<?> that = (CompositeModel<?>) o;
+
+        return models != null ? models.equals(that.models) : that.models == null;
+    }
+
+    @Override
+    public int hashCode() {
+        return models != null ? models.hashCode() : 0;
     }
 }

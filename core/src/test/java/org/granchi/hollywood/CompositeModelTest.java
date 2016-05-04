@@ -6,6 +6,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -14,12 +15,6 @@ import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class CompositeModelTest {
-
-    // TODO array null
-    // TODO varargs vacio
-    // TODO array con null
-    // TODO no se puede modificar un getModels
-
 
     @Mock
     private Action action;
@@ -31,13 +26,53 @@ public class CompositeModelTest {
     private ActorMetadata metadata1, metadata2, metadata3, metadata4;
 
     @Test(expected = NullPointerException.class)
-    public void testCantHaveNullModelsSet() {
-        new CompositeModel<>((Model<SingleInstanceActorMetadata>[]) null);
+    public void testCantHaveNullSubModelsCollection() {
+        new CompositeModel<>((Collection<Model<ActorMetadata>>) null);
     }
 
     @Test(expected = NullPointerException.class)
-    public void testCantHaveNullModels() {
-        new CompositeModel<>(new HashSet<>(Arrays.asList(model1, null)));
+    public void testCantHaveNullSubModelsVarargs() {
+        new CompositeModel<>((Model<ActorMetadata>[]) null);
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void testCantHaveNullSubModelsInCollection() {
+        new CompositeModel<>(Arrays.asList(model1, null));
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void testCantHaveNullSubModelsInVarargs() {
+        new CompositeModel<>(model1, null);
+    }
+
+    @Test
+    public void testBothConstructorsAreEquivalent() {
+        assertThat(new CompositeModel<>(model1, model2, model3)).isEqualTo(
+                new CompositeModel<>(Arrays.asList(
+                        model1,
+                        model2,
+                        model3)));
+    }
+
+    @Test
+    public void testOrderDoesNotMatterInConstructor() {
+        assertThat(new CompositeModel<>(model1, model2, model3)).isEqualTo(new CompositeModel<>(
+                model2,
+                model3,
+                model1));
+    }
+
+    @Test
+    public void testRemovesDuplicateSubModelsInConstructor() {
+        CompositeModel<ActorMetadata>
+                compositeModel =
+                new CompositeModel<>(model1, model2, model1);
+
+        compositeModel.actUpon(action);
+
+        // Just once
+        verify(model1).actUpon(action);
+        verify(model2).actUpon(action);
     }
 
     @Test
@@ -45,30 +80,30 @@ public class CompositeModelTest {
         when(model1.actUpon(action)).thenReturn(model3);
         when(model2.actUpon(action)).thenReturn(model4);
 
-        when(model1.getActors()).thenReturn(new HashSet<>(Arrays.asList(metadata1, metadata3)));
-        when(model2.getActors()).thenReturn(new HashSet<>(Arrays.asList(metadata1, metadata2)));
+        when(model1.getActors()).thenReturn(Arrays.asList(metadata1, metadata3));
+        when(model2.getActors()).thenReturn(Arrays.asList(metadata1, metadata2));
 
         when(model3.actUpon(action)).thenReturn(model5);
         when(model4.actUpon(action)).thenReturn(model5);
 
-        CompositeModel<ActorMetadata> compositeModel = new CompositeModel<>(
-                new HashSet<>(Arrays.asList(model1, model2)));
+        CompositeModel<ActorMetadata> compositeModel = new CompositeModel<>(model1, model2);
         Model<ActorMetadata> compositeModel2 = compositeModel.actUpon(action);
         Model<ActorMetadata> compositeModel3 = compositeModel2.actUpon(action);
         compositeModel3.actUpon(action);
 
+        assertThat(compositeModel.getActors().size()).isEqualTo(3);
+        assertThat(compositeModel.getActors()).contains(metadata1);
+        assertThat(compositeModel.getActors()).contains(metadata2);
+        assertThat(compositeModel.getActors()).contains(metadata3);
+
         verify(model1).actUpon(action);
         verify(model2).actUpon(action);
 
-        assertThat(compositeModel2 instanceof CompositeModel);
-        assertThat(compositeModel2.getActors().size() == 3);
-        assertThat(compositeModel2.getActors().contains(metadata1));
-        assertThat(compositeModel2.getActors().contains(metadata2));
-        assertThat(compositeModel2.getActors().contains(metadata3));
+        assertThat(compositeModel2).isInstanceOf(CompositeModel.class);
 
         verify(model3).actUpon(action);
         verify(model4).actUpon(action);
-        assertThat(compositeModel3 instanceof CompositeModel);
+        assertThat(compositeModel3).isInstanceOf(CompositeModel.class);
 
         // Only once
         verify(model5).actUpon(action);
@@ -83,10 +118,7 @@ public class CompositeModelTest {
                 model3,
                 model5))));
 
-        CompositeModel<ActorMetadata>
-                compositeModel =
-                new CompositeModel<>(new HashSet<>(Arrays.asList(model1, model2)));
-        compositeModel.actUpon(action).actUpon(action);
+        new CompositeModel<>(model1, model2).actUpon(action).actUpon(action);
 
         verify(model3).actUpon(action);
         verify(model4).actUpon(action);
@@ -95,11 +127,19 @@ public class CompositeModelTest {
 
     @Test
     public void testNoSubModelsReturnNull() {
-        CompositeModel<ActorMetadata> compositeModel = new CompositeModel<>(
-                new HashSet<>(Arrays.asList(model1, model2)));
-        Model<ActorMetadata> resultModel = compositeModel.actUpon(action);
+        Model<ActorMetadata> resultModel = new CompositeModel<>(model1, model2).actUpon(action);
 
         assertThat(resultModel).isNull();
+    }
+
+    @Test(expected = UnsupportedOperationException.class)
+    public void testGetModelsCantAddMore() {
+        new CompositeModel<>(model1).getModels().add(model2);
+    }
+
+    @Test(expected = UnsupportedOperationException.class)
+    public void testGetModelsCantRemove() {
+        new CompositeModel<>(model1).getModels().remove(model1);
     }
 
     // TODO incompatible actorMetadata? single instance, same class different properties

@@ -1,6 +1,6 @@
 package org.granchi.hollywood;
 
-import java.util.Set;
+import java.util.Collection;
 
 /**
  * Model for a Hollywood application.
@@ -8,7 +8,8 @@ import java.util.Set;
  * <ul>
  * <li>Maintains a list of actors that should be alive in every moment</li>
  * <li>Should not block, nor start any thread</li>
- * <li>Should be immutable, so there are no lateral effects from it being passed from actor to actor</li>
+ * <li>Should be immutable, so there are no lateral effects from it being passed from actor to
+ * actor</li>
  * <li>Is called from a single thread, so it will never receive two actions concurrently</li>
  * <li>Is ok to return itself from an action, if no change is needed</li>
  * </ul>
@@ -28,10 +29,10 @@ public interface Model<D extends ActorMetadata> {
     Model<D> actUpon(Action action);
 
     /**
-     * Gets the list of Actors the model wants to have in this iteration of the app cycle, as a collection of
-     * ActorMetadata that can be used to buildActorFrom which ones are missing.
+     * Gets the Actors the model wants to have in this iteration of the app cycle, as a collection
+     * of ActorMetadata that can be used to buildActorFrom which ones are missing.
      *
-     * @return list of actors
+     * @return actors
      */
-    Set<D> getActors();
+    Collection<D> getActors();
 }

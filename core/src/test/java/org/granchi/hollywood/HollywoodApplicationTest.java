@@ -4,62 +4,33 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-import rx.Observable;
 
+import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
+import rx.Observable;
+
 import static com.google.common.truth.Truth.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.same;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class HollywoodApplicationTest {
-    private class MockHollywoodApplication extends HollywoodApplication<ActorMetadata> {
-        public MockHollywoodApplication(Model<ActorMetadata> initialModel,
-                                        Cast.Factory<ActorMetadata> castFactory,
-                                        ModelExceptionHandler<ActorMetadata> exceptionHandler) {
-            super(initialModel, castFactory, exceptionHandler);
-        }
-
-        @Override
-        protected void logWarning(String msg) {
-            Logger.getGlobal().warning(msg);
-        }
-
-        @Override
-        protected void logError(String msg, Throwable throwable) {
-            Logger.getGlobal().severe(msg);
-        }
-
-        @Override
-        protected void logInfo(String msg) {
-            Logger.getGlobal().info(msg);
-        }
-
-        @Override
-        protected void logDebug(String msg) {
-
-        }
-    }
-
     @Mock
     private Model<ActorMetadata> model, model2, model3;
-
     @Mock
     private Cast.Factory<ActorMetadata> castFactory;
-
     @Mock
     private Cast cast;
-
     @Mock
     private ActorMetadata actorMetadata;
-
     @Mock
     private Action action, action2, action3;
-
     @Mock
     private ModelExceptionHandler<ActorMetadata> exceptionHandler;
 
@@ -83,7 +54,6 @@ public class HollywoodApplicationTest {
         verify(castFactory).build(any(Observable.class));
     }
 
-
     @Test(expected = IllegalStateException.class)
     public void testCantHaveANullCast() throws Exception {
         new MockHollywoodApplication(model, models -> null, null);
@@ -91,7 +61,7 @@ public class HollywoodApplicationTest {
 
     @Test
     public void testModelWithNoActorsEndsApp() throws Exception {
-        when(model.getActors()).thenReturn(Collections.emptySet());
+        when(model.getActors()).thenReturn(Collections.emptyList());
         when(cast.getActions()).thenReturn(Observable.empty());
 
         MockHollywoodApplication app = new MockHollywoodApplication(model, models -> cast, null);
@@ -103,7 +73,7 @@ public class HollywoodApplicationTest {
 
     @Test
     public void testNullModelEndsApp() throws Exception {
-        Set<ActorMetadata> metadata = new HashSet<>(Collections.singletonList(actorMetadata));
+        Collection<ActorMetadata> metadata = Collections.singletonList(actorMetadata);
 
         when(model.getActors()).thenReturn(metadata);
         when(cast.getActions()).thenReturn(Observable.just(action));
@@ -121,7 +91,7 @@ public class HollywoodApplicationTest {
     public void testBasicCycle() throws Exception {
         // Delay is so isRunning will get the app still running
         Observable<Action> actions = Observable.just(action, action2, action3).delay(100, TimeUnit.MILLISECONDS);
-        Set<ActorMetadata> metadata = new HashSet<>(Collections.singletonList(actorMetadata));
+        Collection<ActorMetadata> metadata = Collections.singletonList(actorMetadata);
 
         when(cast.getActions()).thenReturn(actions);
 
@@ -150,7 +120,7 @@ public class HollywoodApplicationTest {
 
     @Test
     public void testExceptionInModelWithoutHandlerEndsApp() throws Exception {
-        Set<ActorMetadata> metadata = new HashSet<>(Collections.singletonList(actorMetadata));
+        Collection<ActorMetadata> metadata = Collections.singletonList(actorMetadata);
 
         when(model.getActors()).thenReturn(metadata);
         // One action, one second waiting and then more actions
@@ -167,7 +137,7 @@ public class HollywoodApplicationTest {
 
     @Test
     public void testModelExceptionHandlerReturningNullEndsApp() throws Exception {
-        Set<ActorMetadata> metadata = new HashSet<>(Collections.singletonList(actorMetadata));
+        Collection<ActorMetadata> metadata = Collections.singletonList(actorMetadata);
         Exception ex = new RuntimeException();
 
         when(model.getActors()).thenReturn(metadata);
@@ -178,7 +148,9 @@ public class HollywoodApplicationTest {
 
         when(exceptionHandler.onException(model, action, ex)).thenReturn(null);
 
-        MockHollywoodApplication app = new MockHollywoodApplication(model, models -> cast, exceptionHandler);
+        MockHollywoodApplication
+                app =
+                new MockHollywoodApplication(model, models -> cast, exceptionHandler);
         app.run();
 
         Thread.sleep(100);
@@ -187,7 +159,7 @@ public class HollywoodApplicationTest {
 
     @Test
     public void testModelExceptionHandlerCanRecover() throws Exception {
-        Set<ActorMetadata> metadata = new HashSet<>(Collections.singletonList(actorMetadata));
+        Collection<ActorMetadata> metadata = Collections.singletonList(actorMetadata);
         Exception ex = new RuntimeException();
 
         when(model.getActors()).thenReturn(metadata);
@@ -207,6 +179,34 @@ public class HollywoodApplicationTest {
         verify(model).actUpon(action);
         verify(model2).actUpon(action2);
         assertThat(app.isRunning()).isFalse();
+    }
+
+    private class MockHollywoodApplication extends HollywoodApplication<ActorMetadata> {
+        public MockHollywoodApplication(Model<ActorMetadata> initialModel,
+                                        Cast.Factory<ActorMetadata> castFactory,
+                                        ModelExceptionHandler<ActorMetadata> exceptionHandler) {
+            super(initialModel, castFactory, exceptionHandler);
+        }
+
+        @Override
+        protected void logWarning(String msg) {
+            Logger.getGlobal().warning(msg);
+        }
+
+        @Override
+        protected void logError(String msg, Throwable throwable) {
+            Logger.getGlobal().severe(msg);
+        }
+
+        @Override
+        protected void logInfo(String msg) {
+            Logger.getGlobal().info(msg);
+        }
+
+        @Override
+        protected void logDebug(String msg) {
+
+        }
     }
 
     // TODO all the actions in one thread

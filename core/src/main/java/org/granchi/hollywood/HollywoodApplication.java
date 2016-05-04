@@ -96,7 +96,7 @@ public abstract class HollywoodApplication<D extends ActorMetadata> {
                 // Ensure every actor exists, and no one more
                 // Cast will complete its getActions Observable when given an empty Actor set, so this subscription will
                 // end
-                cast.ensureCast(model == null ? Collections.emptySet() : model.getActors());
+                cast.ensureCast(model == null ? Collections.emptyList() : model.getActors());
 
                 // Unrecoverable state, there is no model or no actors to react to it
                 if (model == null || model.getActors().isEmpty()) {
