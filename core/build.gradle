@@ -17,7 +17,7 @@ sourceCompatibility = JavaVersion.VERSION_1_8
 description = "An opinionated, Android-aware, Java functional reactive framework inspired by Cycle.js"
 
 dependencies {
-    compile 'io.reactivex:rxjava:1.1.3'
+    compile 'io.reactivex:rxjava:1.1.4'
     testCompile 'junit:junit:4.12'
     testCompile 'org.mockito:mockito-core:2.0.43-beta'
     testCompile 'com.google.truth:truth:0.28'
