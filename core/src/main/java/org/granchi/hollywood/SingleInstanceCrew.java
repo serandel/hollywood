@@ -6,9 +6,13 @@ import java.util.HashMap;
 import rx.Observable;
 
 /**
- * Cast of Actors where there can be no more than one instance of each specific Actor class.
+ * Crew of Actors where there can be no more than one instance of each specific Actor class.
+ *
+ * @param <R> type of Roster that defines all the possible types of Actors
+ * @param <D> type of ActorMetadata it uses for building and identifying Actors
  */
-public class SingleInstanceCast extends Cast<SingleInstanceActorMetadata>{
+// TODO kill and take the singleInstance flag to ActorMetadata?
+public class SingleInstanceCrew<R extends Roster, D extends ActorMetadata<R>> extends Crew<R, D> {
     private final Actor.Factory<SingleInstanceActorMetadata> factory;
 
     private HashMap<String, Actor<SingleInstanceActorMetadata>> actors;
@@ -19,7 +23,8 @@ public class SingleInstanceCast extends Cast<SingleInstanceActorMetadata>{
      * @param factory factory for Actors
      * @param models Observable for Models
      */
-    public SingleInstanceCast(Actor.Factory<SingleInstanceActorMetadata> factory, Observable<Model<SingleInstanceActorMetadata>> models) {
+    public SingleInstanceCrew(Actor.Factory<SingleInstanceActorMetadata> factory,
+                              Observable<Model<SingleInstanceActorMetadata>> models) {
         super(models);
 
         if (factory == null) {

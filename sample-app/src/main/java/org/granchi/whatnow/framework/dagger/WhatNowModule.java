@@ -3,12 +3,12 @@ package org.granchi.whatnow.framework.dagger;
 import android.app.Application;
 
 import org.granchi.hollywood.Actor;
-import org.granchi.hollywood.Cast;
 import org.granchi.hollywood.CompositeModel;
+import org.granchi.hollywood.Crew;
 import org.granchi.hollywood.Model;
 import org.granchi.hollywood.ModelExceptionHandler;
 import org.granchi.hollywood.SingleInstanceActorMetadata;
-import org.granchi.hollywood.SingleInstanceCast;
+import org.granchi.hollywood.SingleInstanceCrew;
 import org.granchi.hollywood.android.HollywoodAndroidApplicationCompanion;
 import org.granchi.whatnow.TasksModel;
 import org.granchi.whatnow.WhatNowApplication;
@@ -47,8 +47,8 @@ public class WhatNowModule {
     }
 
     @Provides
-    Cast.Factory<SingleInstanceActorMetadata> provideCastFactory() {
-        return models -> new SingleInstanceCast(metadata -> {
+    Crew.Factory<SingleInstanceActorMetadata> provideCrewFactory() {
+        return models -> new SingleInstanceCrew(metadata -> {
             try {
                 return (Actor<SingleInstanceActorMetadata>) Class.forName(metadata.getActorClass())
                                                                  .getConstructor()
@@ -71,11 +71,11 @@ public class WhatNowModule {
     @Provides
     HollywoodAndroidApplicationCompanion provideCompanion(WhatNowApplication app,
                                                           Model<SingleInstanceActorMetadata> initialModel,
-                                                          Cast.Factory<SingleInstanceActorMetadata> castFactory,
+                                                          Crew.Factory<SingleInstanceActorMetadata> crewFactory,
                                                           ModelExceptionHandler<SingleInstanceActorMetadata> exceptionHandler) {
         return new HollywoodAndroidApplicationCompanion(app,
                                                         initialModel,
-                                                        castFactory,
+                                                        crewFactory,
                                                         exceptionHandler);
     }
 }

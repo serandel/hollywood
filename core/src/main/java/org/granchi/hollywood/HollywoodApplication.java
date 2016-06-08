@@ -1,13 +1,13 @@
 package org.granchi.hollywood;
 
+import java.util.Collections;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+
 import rx.Subscription;
 import rx.schedulers.Schedulers;
 import rx.subjects.BehaviorSubject;
 import rx.subjects.Subject;
-
-import java.util.Collections;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 
 /**
  * Hollywood application.
@@ -21,16 +21,15 @@ import java.util.concurrent.Executors;
  * Subclasses that manipulate Actors or Models from outside the loop (for example, Android views being created by the
  * S.O.) must coordinate their work with the provided executor.
  *
+ * @param <R> type of Roster that defines all the possible Actors
  * @param <D> type of the ActorMetadata used to build Actors
  * @author serandel
  */
-public abstract class HollywoodApplication<D extends ActorMetadata> {
+public abstract class HollywoodApplication<R extends Roster, D extends ActorMetadata<R>> {
     protected final Executor executor;
+    private final Crew<R, D> crew;
     private Subscription loopSubscription;
-
     private Model<D> model;
-    private final Cast<D> cast;
-
     private Subject<Model<D>, Model<D>> models;
 
     private ModelExceptionHandler<D> exceptionHandler;
@@ -39,16 +38,16 @@ public abstract class HollywoodApplication<D extends ActorMetadata> {
      * Constructor.
      *
      * @param initialModel     initial Model, can't be null
-     * @param castFactory      factory for Cast, can't be null
+     * @param crewFactory      factory for Crew, can't be null
      * @param exceptionHandler handler for Exceptions during Model.actUpon, can be null to just end the app if it
      *                         happens
      */
-    public HollywoodApplication(Model<D> initialModel, Cast.Factory<D> castFactory,
+    public HollywoodApplication(Model<D> initialModel, Crew.Factory<R, D> crewFactory,
                                 ModelExceptionHandler<D> exceptionHandler) {
         if (initialModel == null) {
             throw new NullPointerException();
         }
-        if (castFactory == null) {
+        if (crewFactory == null) {
             throw new NullPointerException();
         }
 
@@ -57,9 +56,9 @@ public abstract class HollywoodApplication<D extends ActorMetadata> {
 
         models = BehaviorSubject.create();
 
-        cast = castFactory.build(models);
-        if (cast == null) {
-            throw new IllegalStateException("Cast null");
+        crew = crewFactory.build(models);
+        if (crew == null) {
+            throw new IllegalStateException("Crew null");
         }
 
         // Every cycle goes in the same thread
@@ -75,13 +74,14 @@ public abstract class HollywoodApplication<D extends ActorMetadata> {
     public void run() {
         executor.execute(() -> {
             // Have to create the initial set of Actors
-            cast.ensureCast(model.getActors());
+            crew.ensureCrew(model.getActors());
 
             // Feed them initial model
             models.onNext(model);
 
             // And from now on...
-            loopSubscription = cast.getActions().subscribeOn(Schedulers.from(executor)).subscribe(action -> {
+            loopSubscription =
+                    crew.getActions().subscribeOn(Schedulers.from(executor)).subscribe(action -> {
                 try {
                     model = model.actUpon(action);
                 } catch (Exception e) {
@@ -94,9 +94,10 @@ public abstract class HollywoodApplication<D extends ActorMetadata> {
                 }
 
                 // Ensure every actor exists, and no one more
-                // Cast will complete its getActions Observable when given an empty Actor set, so this subscription will
+                        // Crew will complete its getActions Observable when given an empty Actor set, so this subscription will
                 // end
-                cast.ensureCast(model == null ? Collections.emptyList() : model.getActors());
+                        crew.ensureCrew(model ==
+                                        null ? Collections.emptyList() : model.getActors());
 
                 // Unrecoverable state, there is no model or no actors to react to it
                 if (model == null || model.getActors().isEmpty()) {

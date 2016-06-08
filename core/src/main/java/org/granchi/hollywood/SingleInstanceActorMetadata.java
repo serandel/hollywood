@@ -3,26 +3,22 @@ package org.granchi.hollywood;
 /**
  * Metadata for Actors that are just identified by their classes. There can only be a single instance of each specific
  * Actor class.
+ *
+ * @param <R> type of Roster that defines all the possible types of Actors
  */
 // TODO parameters
-public class SingleInstanceActorMetadata implements ActorMetadata {
-    private final String actorClass;
+// TODO remove this subclass and put everything in the base class?
+public class SingleInstanceActorMetadata<R extends Roster> implements ActorMetadata<R> {
+    // TODO kill this?
+    private final R roster;
 
     /**
      * Constructor.
      *
-     * @param actorClass name of the class of the Actor, must be fully qualified
+     * @param roster type of Actor from the Roster
      */
-    public SingleInstanceActorMetadata(String actorClass) {
-        this.actorClass = actorClass;
-    }
-
-    /**
-     * Return the class of the Actor it represents.
-     *
-     * @return class of the Actor
-     */
-    public String getActorClass() {
-        return actorClass;
+    // TODO kill this?
+    public SingleInstanceActorMetadata(R roster) {
+        this.roster = roster;
     }
 }

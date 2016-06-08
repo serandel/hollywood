@@ -1,6 +1,6 @@
 package org.granchi.hollywood.android;
 
-import org.granchi.hollywood.Cast;
+import org.granchi.hollywood.Crew;
 import org.granchi.hollywood.HollywoodApplication;
 import org.granchi.hollywood.Model;
 import org.granchi.hollywood.ModelExceptionHandler;
@@ -14,7 +14,8 @@ import timber.log.Timber;
  * @author serandel
  */
 // TODO creation parameters
-public class HollywoodAndroidApplicationCompanion extends HollywoodApplication<SingleInstanceActorMetadata> {
+public class HollywoodAndroidApplicationCompanion extends
+                                                  HollywoodApplication<SingleInstanceActorMetadata> {
     private final HollywoodAndroidApplication app;
 
     /**
@@ -22,11 +23,16 @@ public class HollywoodAndroidApplicationCompanion extends HollywoodApplication<S
      *
      * @param app              HollywoodAndroidApplication, can't be null
      * @param initialModel     initial Model, can't be null
-     * @param castFactory      factory for Cast, can't be null
-     * @param exceptionHandler handler for Exceptions during Model.actUpon, can be null to just end the app if it
+     * @param crewFactory      factory for Crew, can't be null
+     * @param exceptionHandler handler for Exceptions during Model.actUpon, can be null to just end
+     *                         the app if it
      */
-    public HollywoodAndroidApplicationCompanion(HollywoodAndroidApplication app, Model<SingleInstanceActorMetadata> initialModel, Cast.Factory<SingleInstanceActorMetadata> castFactory, ModelExceptionHandler<SingleInstanceActorMetadata> exceptionHandler) {
-        super(initialModel, castFactory, exceptionHandler);
+    public HollywoodAndroidApplicationCompanion(HollywoodAndroidApplication app,
+                                                Model<SingleInstanceActorMetadata> initialModel,
+                                                Crew.Factory<SingleInstanceActorMetadata>
+                                                        crewFactory,
+                                                ModelExceptionHandler<SingleInstanceActorMetadata> exceptionHandler) {
+        super(initialModel, crewFactory, exceptionHandler);
 
         if (app == null) {
             throw new NullPointerException();

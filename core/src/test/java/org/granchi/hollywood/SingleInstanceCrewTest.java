@@ -5,37 +5,28 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-import rx.Observable;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import rx.Observable;
+
 import static com.google.common.truth.Truth.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
-public class SingleInstanceCastTest {
-    // Different subclasses, so the instances get registered correctly
-    private interface ActorSub1 extends Actor<SingleInstanceActorMetadata> {
-    }
-
-    private interface ActorSub2 extends Actor<SingleInstanceActorMetadata> {
-    }
-
+public class SingleInstanceCrewTest {
     @Mock
     private Model<ActorMetadata> model;
-
     @Mock
     private Actor.Factory<SingleInstanceActorMetadata> actorFactory;
-
     @Mock
     private ActorSub1 actor;
     @Mock
     private ActorSub2 actor2;
-
     private SingleInstanceActorMetadata metadata, metadata2;
 
     @Before
@@ -49,12 +40,12 @@ public class SingleInstanceCastTest {
 
     @Test(expected = NullPointerException.class)
     public void testCantHaveANullActorFactory() {
-        new SingleInstanceCast(null, Observable.<Model<SingleInstanceActorMetadata>>empty());
+        new SingleInstanceCrew(null, Observable.<Model<SingleInstanceActorMetadata>>empty());
     }
 
     @Test(expected = NullPointerException.class)
     public void testCantHaveANullModelsObservable() {
-        new SingleInstanceCast(actorFactory, null);
+        new SingleInstanceCrew(actorFactory, null);
     }
 
     @Test
@@ -64,11 +55,11 @@ public class SingleInstanceCastTest {
 
         when(actorFactory.create(metadata)).thenReturn(actor);
 
-        SingleInstanceCast cast = new SingleInstanceCast(actorFactory, Observable.empty());
+        SingleInstanceCrew cast = new SingleInstanceCrew(actorFactory, Observable.empty());
 
         assertThat(!cast.containsActorFrom(metadata));
 
-        cast.ensureCast(metadatas);
+        cast.ensureCrew(metadatas);
 
         verify(actorFactory).create(metadata);
 
@@ -82,10 +73,10 @@ public class SingleInstanceCastTest {
 
         when(actorFactory.create(metadata)).thenReturn(actor);
 
-        SingleInstanceCast cast = new SingleInstanceCast(actorFactory, Observable.empty());
+        SingleInstanceCrew cast = new SingleInstanceCrew(actorFactory, Observable.empty());
 
-        cast.ensureCast(metadatas);
-        cast.ensureCast(metadatas);
+        cast.ensureCrew(metadatas);
+        cast.ensureCrew(metadatas);
 
         // Just once
         verify(actorFactory).create(metadata);
@@ -100,9 +91,9 @@ public class SingleInstanceCastTest {
         when(actorFactory.create(metadata)).thenReturn(actor);
         when(actorFactory.create(metadata2)).thenReturn(actor2);
 
-        SingleInstanceCast cast = new SingleInstanceCast(actorFactory, Observable.empty());
+        SingleInstanceCrew cast = new SingleInstanceCrew(actorFactory, Observable.empty());
 
-        cast.ensureCast(metadatas);
+        cast.ensureCrew(metadatas);
 
         verify(actorFactory).create(metadata);
         verify(actorFactory).create(metadata2);
@@ -118,9 +109,9 @@ public class SingleInstanceCastTest {
         when(actorFactory.create(metadata)).thenReturn(actor);
         when(actorFactory.create(metadata2)).thenReturn(actor2);
 
-        SingleInstanceCast cast = new SingleInstanceCast(actorFactory, Observable.empty());
+        SingleInstanceCrew cast = new SingleInstanceCrew(actorFactory, Observable.empty());
 
-        cast.ensureCast(metadatas);
+        cast.ensureCrew(metadatas);
 
         verify(actorFactory).create(metadata);
         verify(actorFactory).create(metadata2);
@@ -129,10 +120,21 @@ public class SingleInstanceCastTest {
         assertThat(cast.containsActorFrom(metadata2)).isTrue();
 
         metadatas.remove(metadata2);
-        cast.ensureCast(metadatas);
+        cast.ensureCrew(metadatas);
 
         assertThat(cast.containsActorFrom(metadata)).isTrue();
         assertThat(cast.containsActorFrom(metadata2)).isFalse();
+    }
+
+    private enum TestRoster extends Roster {
+        ACTOR1, ACTOR2;
+    }
+
+    // Different subclasses, so the instances get registered correctly
+    private interface ActorSub1 extends Actor<SingleInstanceActorMetadata> {
+    }
+
+    private interface ActorSub2 extends Actor<SingleInstanceActorMetadata> {
     }
 
     // TODO same class, different parameters, exception
