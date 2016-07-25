@@ -5,10 +5,9 @@ package org.granchi.hollywood;
  *
  * Without it, the application would end if an Exception happens.
  *
- * @param <D> type of the ActorMetadata used to build Actors
  * @author serandel
  */
-public interface ModelExceptionHandler <D extends ActorMetadata>{
+public interface ModelExceptionHandler {
     /**
      * An Exception has ocurred during Model.actUpon(Action).
      *
@@ -17,5 +16,5 @@ public interface ModelExceptionHandler <D extends ActorMetadata>{
      * @param exception Exception thrown
      * @return Model that the application should keep as the current model, null for finishing the app
      */
-    Model<D> onException(Model<D> model, Action action, Exception exception);
+    Model onException(Model model, Action action, Exception exception);
 }

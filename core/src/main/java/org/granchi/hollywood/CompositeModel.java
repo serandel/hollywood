@@ -1,11 +1,9 @@
 package org.granchi.hollywood;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -13,11 +11,10 @@ import java.util.Set;
  * <p>
  * It serves as a way to decompose business logic in several components.
  *
- * @param <D> type of ActorMetadata it uses for building and identifying Actors
  * @author serandel
  */
-public class CompositeModel<D extends ActorMetadata> implements Model<D> {
-    private Set<Model<D>> models;
+public class CompositeModel implements Model {
+    private Set<Model> models;
 
 
     /**
@@ -29,7 +26,7 @@ public class CompositeModel<D extends ActorMetadata> implements Model<D> {
      *
      * @param initialModels initial models, the order is irrelevant
      */
-    public CompositeModel(Model<D>... initialModels) {
+    public CompositeModel(Model... initialModels) {
         this(Arrays.asList(initialModels));
     }
 
@@ -40,7 +37,7 @@ public class CompositeModel<D extends ActorMetadata> implements Model<D> {
      *
      * @param initialModels initial models
      */
-    public CompositeModel(Collection<Model<D>> initialModels) {
+    public CompositeModel(Collection<Model> initialModels) {
         if (initialModels == null) {
             throw new NullPointerException();
         }
@@ -48,7 +45,7 @@ public class CompositeModel<D extends ActorMetadata> implements Model<D> {
             throw new IllegalArgumentException();
         }
 
-        for (Model<D> model : initialModels) {
+        for (Model model : initialModels) {
             if (model == null) {
                 throw new NullPointerException();
             }
@@ -59,23 +56,23 @@ public class CompositeModel<D extends ActorMetadata> implements Model<D> {
 
     @Override
     @SuppressWarnings("unchecked")
-    public Model<D> actUpon(Action action) {
+    public Model actUpon(Action action) {
         // It's easier for the submodels if they don't have to worry about duplicates
-        Set<Model<D>> resultModels = new HashSet<>();
+        Set<Model> resultModels = new HashSet<>();
 
-        for (Model<D> model : models) {
-            Model<D> resultModel = model.actUpon(action);
+        for (Model model : models) {
+            Model resultModel = model.actUpon(action);
 
             if (resultModel != null) {
                 if (resultModel instanceof CompositeModel) {
-                    resultModels.addAll(((CompositeModel<D>) resultModel).getModels());
+                    resultModels.addAll(((CompositeModel) resultModel).getModels());
                 } else {
                     resultModels.add(resultModel);
                 }
             }
         }
 
-        return resultModels.isEmpty() ? null : new CompositeModel<>(resultModels);
+        return resultModels.isEmpty() ? null : new CompositeModel(resultModels);
     }
 
     /**
@@ -85,21 +82,11 @@ public class CompositeModel<D extends ActorMetadata> implements Model<D> {
      *
      * @return Models
      */
-    Collection<Model<D>> getModels() {
+    Collection<Model> getModels() {
         return Collections.unmodifiableCollection(models);
     }
 
-    @Override
-    public Collection<D> getActors() {
-        // We'll avoid duplicates
-        Set<D> actors = new HashSet<>();
-
-        for (Model<D> model : models) {
-            actors.addAll(model.getActors());
-        }
-
-        return actors;
-    }
+    // TODO getSubmodelsOfType?
 
     @Override
     public boolean equals(Object o) {
@@ -110,7 +97,7 @@ public class CompositeModel<D extends ActorMetadata> implements Model<D> {
             return false;
         }
 
-        CompositeModel<?> that = (CompositeModel<?>) o;
+        CompositeModel that = (CompositeModel) o;
 
         return models != null ? models.equals(that.models) : that.models == null;
     }

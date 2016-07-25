@@ -1,12 +1,9 @@
 package org.granchi.hollywood;
 
-import java.util.Collection;
-
 /**
  * Model for a Hollywood application.
  * <p>
  * <ul>
- * <li>Maintains a list of actors that should be alive in every moment</li>
  * <li>Should not block, nor start any thread</li>
  * <li>Should be immutable, so there are no lateral effects from it being passed from actor to
  * actor</li>
@@ -14,10 +11,9 @@ import java.util.Collection;
  * <li>Is ok to return itself from an action, if no change is needed</li>
  * </ul>
  *
- * @param <D> type of the ActorMetadata used to build Actors
  * @author serandel
  */
-public interface Model<D extends ActorMetadata> {
+public interface Model {
     /**
      * Generates a new model, from itself and the data contained in an action.
      * <p>
@@ -26,13 +22,5 @@ public interface Model<D extends ActorMetadata> {
      * @param action action, can't be null
      * @return new model
      */
-    Model<D> actUpon(Action action);
-
-    /**
-     * Gets the Actors the model wants to have in this iteration of the app cycle, as a collection
-     * of ActorMetadata that can be used to buildActorFrom which ones are missing.
-     *
-     * @return actors
-     */
-    Collection<D> getActors();
+    Model actUpon(Action action);
 }

@@ -4,7 +4,6 @@ import org.granchi.hollywood.Action;
 import org.granchi.hollywood.Actor;
 import org.granchi.hollywood.Model;
 import org.granchi.hollywood.ModelFilter;
-import org.granchi.hollywood.SingleInstanceActorMetadata;
 import org.granchi.hollywood.preferences.PreferencesModel;
 
 import rx.Observable;
@@ -16,7 +15,7 @@ import rx.subjects.PublishSubject;
  *
  * @author serandel
  */
-public class SharedPreferencesActor implements Actor<SingleInstanceActorMetadata> {
+public class SharedPreferencesActor implements Actor {
     private final PublishSubject<Action> actions = PublishSubject.create();
 
     @Override
@@ -25,7 +24,7 @@ public class SharedPreferencesActor implements Actor<SingleInstanceActorMetadata
     }
 
     @Override
-    public void subscribeTo(Observable<Model<SingleInstanceActorMetadata>> models) {
+    public void subscribeTo(Observable<Model> models) {
         // No need for observeOn, because we only emit actions back, and those are already
         // serialized in the model thread
         models.compose(ModelFilter.modelOfType(PreferencesModel.class))

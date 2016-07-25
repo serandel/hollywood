@@ -22,7 +22,8 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public class HollywoodApplicationTest {
     @Mock
-    private Model<ActorMetadata> model, model2, model3;
+    private Model model, model2, model3;
+
     @Mock
     private Crew.Factory<ActorMetadata> crewFactory;
     @Mock
@@ -31,8 +32,9 @@ public class HollywoodApplicationTest {
     private ActorMetadata actorMetadata;
     @Mock
     private Action action, action2, action3;
+
     @Mock
-    private ModelExceptionHandler<ActorMetadata> exceptionHandler;
+    private ModelExceptionHandler exceptionHandler;
 
     @Test(expected = NullPointerException.class)
     public void testCantHaveANullModel() throws Exception {

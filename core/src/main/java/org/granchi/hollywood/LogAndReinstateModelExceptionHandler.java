@@ -3,26 +3,9 @@ package org.granchi.hollywood;
 /**
  * ModelExceptionHandler that logs that the exception has happened and keeps the same model, discarding the action.
  *
- * @param <D> type of the ActorMetadata used to build Actors
  * @author serandel
  */
-public class LogAndReinstateModelExceptionHandler<D extends ActorMetadata> implements ModelExceptionHandler<D>{
-    /**
-     * Sets where to log when an Exception happens.
-     *
-     * @param <D> type of the ActorMetadata used to build Actors
-     */
-    public interface Logger<D extends ActorMetadata> {
-        /**
-         * Logs when an Exception happends while a Model tries to act upon an Action.
-         *
-         * @param model Model
-         * @param action Action
-         * @param exception Exception
-         */
-        void log(Model<D> model, Action action, Exception exception);
-    }
-
+public class LogAndReinstateModelExceptionHandler implements ModelExceptionHandler {
     private final Logger logger;
 
     /**
@@ -35,9 +18,23 @@ public class LogAndReinstateModelExceptionHandler<D extends ActorMetadata> imple
     }
 
     @Override
-    public Model<D> onException(Model<D> model, Action action, Exception exception) {
+    public Model onException(Model model, Action action, Exception exception) {
         logger.log(model, action, exception);
 
         return model;
+    }
+
+    /**
+     * Sets where to log when an Exception happens.
+     */
+    public interface Logger {
+        /**
+         * Logs when an Exception happens while a Model tries to act upon an Action.
+         *
+         * @param model     Model
+         * @param action    Action
+         * @param exception Exception
+         */
+        void log(Model model, Action action, Exception exception);
     }
 }

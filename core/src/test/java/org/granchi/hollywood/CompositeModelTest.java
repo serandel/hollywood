@@ -20,35 +20,32 @@ public class CompositeModelTest {
     private Action action;
 
     @Mock
-    private Model<ActorMetadata> model1, model2, model3, model4, model5;
-
-    @Mock
-    private ActorMetadata metadata1, metadata2, metadata3, metadata4;
+    private Model model1, model2, model3, model4, model5;
 
     @Test(expected = NullPointerException.class)
     public void testCantHaveNullSubModelsCollection() {
-        new CompositeModel<>((Collection<Model<ActorMetadata>>) null);
+        new CompositeModel((Collection<Model>) null);
     }
 
     @Test(expected = NullPointerException.class)
     public void testCantHaveNullSubModelsVarargs() {
-        new CompositeModel<>((Model<ActorMetadata>[]) null);
+        new CompositeModel((Model[]) null);
     }
 
     @Test(expected = NullPointerException.class)
     public void testCantHaveNullSubModelsInCollection() {
-        new CompositeModel<>(Arrays.asList(model1, null));
+        new CompositeModel(Arrays.asList(model1, null));
     }
 
     @Test(expected = NullPointerException.class)
     public void testCantHaveNullSubModelsInVarargs() {
-        new CompositeModel<>(model1, null);
+        new CompositeModel(model1, null);
     }
 
     @Test
     public void testBothConstructorsAreEquivalent() {
-        assertThat(new CompositeModel<>(model1, model2, model3)).isEqualTo(
-                new CompositeModel<>(Arrays.asList(
+        assertThat(new CompositeModel(model1, model2, model3)).isEqualTo(
+                new CompositeModel(Arrays.asList(
                         model1,
                         model2,
                         model3)));
@@ -56,7 +53,7 @@ public class CompositeModelTest {
 
     @Test
     public void testOrderDoesNotMatterInConstructor() {
-        assertThat(new CompositeModel<>(model1, model2, model3)).isEqualTo(new CompositeModel<>(
+        assertThat(new CompositeModel(model1, model2, model3)).isEqualTo(new CompositeModel(
                 model2,
                 model3,
                 model1));
@@ -64,9 +61,9 @@ public class CompositeModelTest {
 
     @Test
     public void testRemovesDuplicateSubModelsInConstructor() {
-        CompositeModel<ActorMetadata>
+        CompositeModel
                 compositeModel =
-                new CompositeModel<>(model1, model2, model1);
+                new CompositeModel(model1, model2, model1);
 
         compositeModel.actUpon(action);
 
@@ -86,9 +83,9 @@ public class CompositeModelTest {
         when(model3.actUpon(action)).thenReturn(model5);
         when(model4.actUpon(action)).thenReturn(model5);
 
-        CompositeModel<ActorMetadata> compositeModel = new CompositeModel<>(model1, model2);
-        Model<ActorMetadata> compositeModel2 = compositeModel.actUpon(action);
-        Model<ActorMetadata> compositeModel3 = compositeModel2.actUpon(action);
+        CompositeModel compositeModel = new CompositeModel(model1, model2);
+        Model compositeModel2 = compositeModel.actUpon(action);
+        Model compositeModel3 = compositeModel2.actUpon(action);
         compositeModel3.actUpon(action);
 
         assertThat(compositeModel.getActors().size()).isEqualTo(3);
@@ -118,7 +115,7 @@ public class CompositeModelTest {
                 model3,
                 model5))));
 
-        new CompositeModel<>(model1, model2).actUpon(action).actUpon(action);
+        new CompositeModel(model1, model2).actUpon(action).actUpon(action);
 
         verify(model3).actUpon(action);
         verify(model4).actUpon(action);
@@ -127,7 +124,7 @@ public class CompositeModelTest {
 
     @Test
     public void testNoSubModelsReturnNull() {
-        Model<ActorMetadata> resultModel = new CompositeModel<>(model1, model2).actUpon(action);
+        Model resultModel = new CompositeModel(model1, model2).actUpon(action);
 
         assertThat(resultModel).isNull();
     }
@@ -139,7 +136,7 @@ public class CompositeModelTest {
 
     @Test(expected = UnsupportedOperationException.class)
     public void testGetModelsCantRemove() {
-        new CompositeModel<>(model1).getModels().remove(model1);
+        new CompositeModel(model1).getModels().remove(model1);
     }
 
     // TODO incompatible actorMetadata? single instance, same class different properties

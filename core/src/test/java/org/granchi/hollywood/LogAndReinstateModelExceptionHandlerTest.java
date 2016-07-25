@@ -12,7 +12,7 @@ import static com.google.common.truth.Truth.assertThat;
 @RunWith(MockitoJUnitRunner.class)
 public class LogAndReinstateModelExceptionHandlerTest {
     @Mock
-    private Model<ActorMetadata> model;
+    private Model model;
 
     @Mock
     private Action action;
@@ -26,9 +26,11 @@ public class LogAndReinstateModelExceptionHandlerTest {
 
         final boolean[] logged = {false};
 
-        LogAndReinstateModelExceptionHandler<ActorMetadata> handler = new LogAndReinstateModelExceptionHandler(
-                (model1, action1, exception) -> logged[0] = true);
-        Model<ActorMetadata> model2 = handler.onException(model, action, ex);
+        LogAndReinstateModelExceptionHandler<ActorMetadata>
+                handler =
+                new LogAndReinstateModelExceptionHandler(
+                        (model1, action1, exception) -> logged[0] = true);
+        Model model2 = handler.onException(model, action, ex);
 
         assertThat(model).isSameAs(model2);
         assertThat(logged[0]).isTrue();

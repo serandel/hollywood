@@ -1,53 +1,49 @@
 package org.granchi.hollywood;
 
-import java.util.Collections;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 import rx.Subscription;
-import rx.schedulers.Schedulers;
 import rx.subjects.BehaviorSubject;
 import rx.subjects.Subject;
 
 /**
  * Hollywood application.
  * <p>
- * It orchestrates a Model (single-threaded, non-blocking, immutable) with a set of different Actors (blocking,
- * multi-threaded, mutable). It runs in a loop, where actions from an actor are applied to the model, who returns a
+ * It orchestrates a Model (single-threaded, non-blocking, immutable) with a set of different Actors
+ * (blocking,
+ * multi-threaded, mutable). It runs in a loop, where actions from an actor are applied to the
+ * model, who returns a
  * (possibly) different model that is applied to every actor.
  * <p>
  * Actions are applied in the same thread, so the model is easy to test and understand.
  * <p>
- * Subclasses that manipulate Actors or Models from outside the loop (for example, Android views being created by the
+ * Subclasses that manipulate Actors or Models from outside the loop (for example, Android views
+ * being created by the
  * S.O.) must coordinate their work with the provided executor.
  *
- * @param <R> type of Roster that defines all the possible Actors
- * @param <D> type of the ActorMetadata used to build Actors
  * @author serandel
  */
-public abstract class HollywoodApplication<R extends Roster, D extends ActorMetadata<R>> {
+public abstract class HollywoodApplication {
     protected final Executor executor;
-    private final Crew<R, D> crew;
+    // TODO agents
     private Subscription loopSubscription;
-    private Model<D> model;
-    private Subject<Model<D>, Model<D>> models;
+    private Model model;
+    private Subject<Model, Model> models;
 
-    private ModelExceptionHandler<D> exceptionHandler;
+    private ModelExceptionHandler exceptionHandler;
 
     /**
      * Constructor.
      *
      * @param initialModel     initial Model, can't be null
-     * @param crewFactory      factory for Crew, can't be null
-     * @param exceptionHandler handler for Exceptions during Model.actUpon, can be null to just end the app if it
+     * @param exceptionHandler handler for Exceptions during Model.actUpon, can be null to just end
+     *                         the app if it
      *                         happens
      */
-    public HollywoodApplication(Model<D> initialModel, Crew.Factory<R, D> crewFactory,
-                                ModelExceptionHandler<D> exceptionHandler) {
+    // TODO agents
+    public HollywoodApplication(Model initialModel, ModelExceptionHandler exceptionHandler) {
         if (initialModel == null) {
-            throw new NullPointerException();
-        }
-        if (crewFactory == null) {
             throw new NullPointerException();
         }
 
@@ -56,11 +52,6 @@ public abstract class HollywoodApplication<R extends Roster, D extends ActorMeta
 
         models = BehaviorSubject.create();
 
-        crew = crewFactory.build(models);
-        if (crew == null) {
-            throw new IllegalStateException("Crew null");
-        }
-
         // Every cycle goes in the same thread
         executor = Executors.newSingleThreadExecutor();
     }
@@ -68,54 +59,54 @@ public abstract class HollywoodApplication<R extends Roster, D extends ActorMeta
     /**
      * Runs the application.
      * <p>
-     * Creates a new Thread that executes action->model->actor cycles in a loop until Model becomes null or no Actors
+     * Creates a new Thread that executes action->model->actor cycles in a loop until Model becomes
+     * null or no Actors
      * are wanted by the Model.
      */
     public void run() {
         executor.execute(() -> {
-            // Have to create the initial set of Actors
-            crew.ensureCrew(model.getActors());
-
             // Feed them initial model
             models.onNext(model);
 
-            // And from now on...
-            loopSubscription =
-                    crew.getActions().subscribeOn(Schedulers.from(executor)).subscribe(action -> {
-                try {
-                    model = model.actUpon(action);
-                } catch (Exception e) {
-                    if (exceptionHandler == null) {
-                        model = null;
-                        logError("Exception during model.actUpon", e);
-                    } else {
-                        model = exceptionHandler.onException(model, action, e);
-                    }
-                }
-
-                // Ensure every actor exists, and no one more
-                        // Crew will complete its getActions Observable when given an empty Actor set, so this subscription will
-                // end
-                        crew.ensureCrew(model ==
-                                        null ? Collections.emptyList() : model.getActors());
-
-                // Unrecoverable state, there is no model or no actors to react to it
-                if (model == null || model.getActors().isEmpty()) {
-                    if (model == null) {
-                        logInfo("Ending cycle: model null");
-                    } else {
-                        logInfo("Ending cycle: no actors");
-                    }
-
-                    // We're done!
-                    models.onCompleted();
-                    loopSubscription.unsubscribe();
-                } else {
-                    models.onNext(model);
-                }
-            }, throwable -> {
-                logError("Throwable during action->model->actor cycle", throwable);
-            });
+            // TODO agents
+//            // And from now on...
+//            loopSubscription =
+//                    crew.getActions().subscribeOn(Schedulers.from(executor)).subscribe(action -> {
+//                        try {
+//                            model = model.actUpon(action);
+//                        } catch (Exception e) {
+//                            if (exceptionHandler == null) {
+//                                model = null;
+//                                logError("Exception during model.actUpon", e);
+//                            } else {
+//                                model = exceptionHandler.onException(model, action, e);
+//                            }
+//                        }
+//
+//                        // Ensure every actor exists, and no one more
+//                        // Crew will complete its getActions Observable when given an empty Actor
+//                        // set, so this subscription will
+//                        // end
+//                        crew.ensureCrew(model ==
+//                                        null ? Collections.emptyList() : model.getActors());
+//
+//                        // Unrecoverable state, there is no model or no actors to react to it
+//                        if (model == null || model.getActors().isEmpty()) {
+//                            if (model == null) {
+//                                logInfo("Ending cycle: model null");
+//                            } else {
+//                                logInfo("Ending cycle: no actors");
+//                            }
+//
+//                            // We're done!
+//                            models.onCompleted();
+//                            loopSubscription.unsubscribe();
+//                        } else {
+//                            models.onNext(model);
+//                        }
+//                    }, throwable -> {
+//                        logError("Throwable during action->model->actor cycle", throwable);
+//                    });
         });
     }
 
