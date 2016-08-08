@@ -26,7 +26,7 @@ public class LogAndReinstateModelExceptionHandlerTest {
 
         final boolean[] logged = {false};
 
-        LogAndReinstateModelExceptionHandler<ActorMetadata>
+        LogAndReinstateModelExceptionHandler
                 handler =
                 new LogAndReinstateModelExceptionHandler(
                         (model1, action1, exception) -> logged[0] = true);

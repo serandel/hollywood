@@ -2,20 +2,22 @@ package org.granchi.hollywood;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.invocation.InvocationOnMock;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.stubbing.Answer;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 import rx.Observable;
+import rx.observers.TestSubscriber;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.same;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -25,11 +27,8 @@ public class HollywoodApplicationTest {
     private Model model, model2, model3;
 
     @Mock
-    private Crew.Factory<ActorMetadata> crewFactory;
-    @Mock
-    private Crew crew;
-    @Mock
-    private ActorMetadata actorMetadata;
+    private Actor actor, actor2;
+
     @Mock
     private Action action, action2, action3;
 
@@ -38,50 +37,27 @@ public class HollywoodApplicationTest {
 
     @Test(expected = NullPointerException.class)
     public void testCantHaveANullModel() throws Exception {
-        new MockHollywoodApplication(null, models -> crew, null);
+        new MockHollywoodApplication(null, Arrays.asList(actor, actor2), exceptionHandler);
     }
 
     @Test(expected = NullPointerException.class)
-    public void testCantHaveANullCrewFactory() throws Exception {
-        new MockHollywoodApplication(model, null, null);
+    public void testCantHaveANullActorCollection() throws Exception {
+        new MockHollywoodApplication(model, null, exceptionHandler);
     }
 
-    @Test
-    @SuppressWarnings("unchecked")
-    public void testBuildsAFactory() throws Exception {
-        when(crewFactory.build(any(Observable.class))).thenReturn(crew);
-
-        new MockHollywoodApplication(model, crewFactory, null);
-
-        verify(crewFactory).build(any(Observable.class));
-    }
-
-    @Test(expected = IllegalStateException.class)
-    public void testCantHaveANullCast() throws Exception {
-        new MockHollywoodApplication(model, models -> null, null);
-    }
-
-    @Test
-    public void testModelWithNoActorsEndsApp() throws Exception {
-        when(model.getActors()).thenReturn(Collections.emptyList());
-        when(crew.getActions()).thenReturn(Observable.empty());
-
-        MockHollywoodApplication app = new MockHollywoodApplication(model, models -> crew, null);
-        app.run();
-
-        Thread.sleep(100);
-        assertThat(app.isRunning()).isFalse();
+    @Test(expected = IllegalArgumentException.class)
+    public void testCantHaveAnEmptyActorCollection() throws Exception {
+        new MockHollywoodApplication(model, Collections.emptyList(), exceptionHandler);
     }
 
     @Test
     public void testNullModelEndsApp() throws Exception {
-        Collection<ActorMetadata> metadata = Collections.singletonList(actorMetadata);
-
-        when(model.getActors()).thenReturn(metadata);
-        when(crew.getActions()).thenReturn(Observable.just(action));
+        when(actor.getActions()).thenReturn(Observable.just(action));
         when(model.actUpon(action)).thenReturn(null);
 
-        MockHollywoodApplication app = new MockHollywoodApplication(model, models -> crew, null);
+        MockHollywoodApplication
+                app =
+                new MockHollywoodApplication(model, Arrays.asList(actor), null);
         app.run();
 
         Thread.sleep(100);
@@ -91,46 +67,128 @@ public class HollywoodApplicationTest {
     @Test(timeout = 1000)
     @SuppressWarnings("unchecked")
     public void testBasicCycle() throws Exception {
+        ArgumentCaptor<Observable<Model>> modelsCaptor = ArgumentCaptor.forClass(Observable.class);
+
         // Delay is so isRunning will get the app still running
-        Observable<Action> actions = Observable.just(action, action2, action3).delay(100, TimeUnit.MILLISECONDS);
-        Collection<ActorMetadata> metadata = Collections.singletonList(actorMetadata);
+        Observable<Action>
+                actions1 =
+                Observable.just(action, action2).delay(50, TimeUnit.MILLISECONDS);
+        Observable<Action>
+                actions2 =
+                Observable.just(action3).delay(100, TimeUnit.MILLISECONDS);
 
-        when(crew.getActions()).thenReturn(actions);
-
+        // Models act upon Actions
         when(model.actUpon(action)).thenReturn(model2);
         when(model2.actUpon(action2)).thenReturn(model3);
         when(model3.actUpon(action3)).thenReturn(null);
 
-        when(model.getActors()).thenReturn(metadata);
-        when(model2.getActors()).thenReturn(metadata);
-        when(model3.getActors()).thenReturn(metadata);
+        // Actions come from Actors
+        when(actor.getActions()).thenReturn(actions1);
+        when(actor2.getActions()).thenReturn(actions2);
 
-        MockHollywoodApplication app = new MockHollywoodApplication(model, models -> crew, null);
+        MockHollywoodApplication
+                app =
+                new MockHollywoodApplication(model, Arrays.asList(actor, actor2), null);
+
+        // Actors receive Models
+        verify(actor).subscribeTo(modelsCaptor.capture());
+        Observable<Model> models = modelsCaptor.getValue();
+        verify(actor2).subscribeTo(models);
+        TestSubscriber<Model> subscriber = new TestSubscriber<>();
+        models.subscribe(subscriber);
+
+        // Running
         app.run();
-
         assertThat(app.isRunning());
 
         // Should be enough
         Thread.sleep(250);
 
-        verify(crew, times(3)).ensureCrew(same(metadata));
-
+        // Models received Actions
         verify(model).actUpon(action);
         verify(model2).actUpon(action2);
         verify(model3).actUpon(action3);
+
+        // Actors received all Models
+        subscriber.assertReceivedOnNext(Arrays.asList(model, model2, model3));
+
+        // App finished
+        assertThat(app.isRunning()).isFalse();
+    }
+
+    @Test
+    public void testRepeatedActorsAreIgnored() throws Exception {
+        when(model.actUpon(action)).thenReturn(model2);
+        when(model2.actUpon(action)).thenReturn(model3);
+
+        when(actor.getActions()).thenReturn(Observable.just(action));
+
+        ArgumentCaptor<Observable<Model>> modelsCaptor = ArgumentCaptor.forClass(Observable.class);
+
+        MockHollywoodApplication
+                app =
+                new MockHollywoodApplication(model, Arrays.asList(actor, actor), null);
+
+        // One subscription, not two
+        verify(actor).subscribeTo(modelsCaptor.capture());
+        TestSubscriber<Model> subscriber = new TestSubscriber<>();
+        modelsCaptor.getValue().subscribe(subscriber);
+
+        // Running
+        app.run();
+
+        Thread.sleep(10);
+
+        // No model3 because action was received just once
+        subscriber.assertReceivedOnNext(Arrays.asList(model, model2));
+
+        assertThat(app.isRunning()).isFalse();
+    }
+
+    @Test
+    public void testActionsAreDeliveredInSameThread() throws Exception {
+        final Thread[] threads = new Thread[2];
+
+        when(model.actUpon(action)).thenAnswer(new Answer<Model>() {
+            @Override
+            public Model answer(InvocationOnMock invocation) throws Throwable {
+                threads[0] = Thread.currentThread();
+                return model;
+            }
+        });
+        when(model.actUpon(action2)).thenAnswer(new Answer<Model>() {
+            @Override
+            public Model answer(InvocationOnMock invocation) throws Throwable {
+                threads[1] = Thread.currentThread();
+                return model;
+            }
+        });
+
+        when(actor.getActions()).thenReturn(Observable.just(action));
+        when(actor2.getActions()).thenReturn(Observable.just(action2));
+
+        MockHollywoodApplication
+                app =
+                new MockHollywoodApplication(model, Arrays.asList(actor, actor2), null);
+
+        // Running
+        app.run();
+
+        Thread.sleep(10);
+
+        assertThat(threads[0]).isEqualTo(threads[1]);
     }
 
     @Test
     public void testExceptionInModelWithoutHandlerEndsApp() throws Exception {
-        Collection<ActorMetadata> metadata = Collections.singletonList(actorMetadata);
-
-        when(model.getActors()).thenReturn(metadata);
         // One action, one second waiting and then more actions
-        when(crew.getActions()).thenReturn(Observable.just(action).mergeWith(
+        when(actor.getActions()).thenReturn(Observable.just(action).mergeWith(
                 Observable.just(action2, action3).delay(1000, TimeUnit.MILLISECONDS)));
         when(model.actUpon(action)).thenThrow(new RuntimeException());
 
-        MockHollywoodApplication app = new MockHollywoodApplication(model, models -> crew, null);
+        MockHollywoodApplication
+                app =
+                new MockHollywoodApplication(model, Arrays.asList(actor), null);
         app.run();
 
         Thread.sleep(100);
@@ -139,12 +197,10 @@ public class HollywoodApplicationTest {
 
     @Test
     public void testModelExceptionHandlerReturningNullEndsApp() throws Exception {
-        Collection<ActorMetadata> metadata = Collections.singletonList(actorMetadata);
         Exception ex = new RuntimeException();
 
-        when(model.getActors()).thenReturn(metadata);
         // One action, one second waiting and then more actions
-        when(crew.getActions()).thenReturn(Observable.just(action).mergeWith(
+        when(actor.getActions()).thenReturn(Observable.just(action).mergeWith(
                 Observable.just(action2, action3).delay(1000, TimeUnit.MILLISECONDS)));
         when(model.actUpon(action)).thenThrow(ex);
 
@@ -152,7 +208,7 @@ public class HollywoodApplicationTest {
 
         MockHollywoodApplication
                 app =
-                new MockHollywoodApplication(model, models -> crew, exceptionHandler);
+                new MockHollywoodApplication(model, Arrays.asList(actor), exceptionHandler);
         app.run();
 
         Thread.sleep(100);
@@ -161,20 +217,16 @@ public class HollywoodApplicationTest {
 
     @Test
     public void testModelExceptionHandlerCanRecover() throws Exception {
-        Collection<ActorMetadata> metadata = Collections.singletonList(actorMetadata);
         Exception ex = new RuntimeException();
 
-        when(model.getActors()).thenReturn(metadata);
-        when(model2.getActors()).thenReturn(metadata);
-
-        when(crew.getActions()).thenReturn(Observable.just(action, action2));
+        when(actor.getActions()).thenReturn(Observable.just(action, action2));
         when(model.actUpon(action)).thenThrow(ex);
 
         when(exceptionHandler.onException(model, action, ex)).thenReturn(model2);
 
         MockHollywoodApplication
                 app =
-                new MockHollywoodApplication(model, models -> crew, exceptionHandler);
+                new MockHollywoodApplication(model, Arrays.asList(actor), exceptionHandler);
         app.run();
 
         Thread.sleep(100);
@@ -185,38 +237,31 @@ public class HollywoodApplicationTest {
         assertThat(app.isRunning()).isFalse();
     }
 
-    private class MockHollywoodApplication extends HollywoodApplication<ActorMetadata> {
-        public MockHollywoodApplication(Model<ActorMetadata> initialModel,
-                                        Crew.Factory<ActorMetadata> crewFactory,
-                                        ModelExceptionHandler<ActorMetadata> exceptionHandler) {
-            super(initialModel, crewFactory, exceptionHandler);
+    private class MockHollywoodApplication extends HollywoodApplication {
+        public MockHollywoodApplication(Model initialModel,
+                                        Collection<Actor> actors,
+                                        ModelExceptionHandler exceptionHandler) {
+            super(initialModel, actors, exceptionHandler);
         }
 
         @Override
         protected void logWarning(String msg) {
-            Logger.getGlobal().warning(msg);
+            Logger.getLogger(MockHollywoodApplication.class.getName()).warning(msg);
         }
 
         @Override
         protected void logError(String msg, Throwable throwable) {
-            Logger.getGlobal().severe(msg);
+            Logger.getLogger(MockHollywoodApplication.class.getName()).severe(msg);
         }
 
         @Override
         protected void logInfo(String msg) {
-            Logger.getGlobal().info(msg);
+            Logger.getLogger(MockHollywoodApplication.class.getName()).info(msg);
         }
 
         @Override
         protected void logDebug(String msg) {
-
+            Logger.getLogger(MockHollywoodApplication.class.getName()).fine(msg);
         }
     }
-
-    // TODO all the actions in one thread
-    // TODO hook events to the same thread
-
-    // TODO unsubscribe when an actor dies
-    // TODO subscribe when an actor is created from outside
-    // TODO an actor created from outside receives last model
 }

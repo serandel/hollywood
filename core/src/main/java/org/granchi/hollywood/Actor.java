@@ -28,9 +28,6 @@ public interface Actor {
 
     /**
      * Subscribes to all future Models, so it can adapt to changes in the business logic.
-     * <p>
-     * The Models can't be given in the constructor, because some Actors will be built by the SO,
-     * like Android views.
      *
      * @param models Models
      */
