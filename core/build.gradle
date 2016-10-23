@@ -7,8 +7,6 @@ buildscript {
         classpath 'me.tatarka:gradle-retrolambda:3.3.0-beta4'
     }
 }
-
-
 apply plugin: 'java'
 apply plugin: 'me.tatarka.retrolambda'
 
@@ -17,7 +15,7 @@ sourceCompatibility = JavaVersion.VERSION_1_8
 description = "An opinionated, Android-aware, Java functional reactive framework inspired by Cycle.js"
 
 dependencies {
-    compile 'io.reactivex:rxjava:1.1.9'
+    compile 'io.reactivex:rxjava:1.2.1'
     testCompile 'junit:junit:4.12'
     testCompile 'org.mockito:mockito-core:2.0.100-beta'
     testCompile 'com.google.truth:truth:0.29'

@@ -38,7 +38,7 @@ dependencies {
 
     compile 'com.jakewharton.timber:timber:4.1.2'
 
-    compile 'io.reactivex:rxandroid:1.2.0'
+    compile 'io.reactivex:rxandroid:1.2.1'
 
     testCompile 'junit:junit:4.12'
     testCompile 'org.mockito:mockito-core:2.0.100-beta'
