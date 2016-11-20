@@ -1,10 +1,12 @@
 package org.granchi.hollywood;
 
+import org.junit.Ignore;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
+@Ignore
 public class CrewTest {
     @Mock
     private Model model;
