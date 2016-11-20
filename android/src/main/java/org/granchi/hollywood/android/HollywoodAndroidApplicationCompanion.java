@@ -49,6 +49,11 @@ public class HollywoodAndroidApplicationCompanion extends
     }
 
     @Override
+    protected void logWarning(String msg, Throwable throwable) {
+        Timber.w(throwable, msg);
+    }
+
+    @Override
     protected void logError(String msg, Throwable throwable) {
         Timber.e(throwable, msg);
 
