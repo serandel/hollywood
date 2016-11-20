@@ -75,24 +75,25 @@ public abstract class HollywoodApplication {
      * Runs the application.
      * <p>
      * Creates a new Thread that executes action->model->actor cycles in a loop until Model becomes
-     * null or no Actors
-     * are wanted by the Model.
+     * null.
      */
     public void run() {
         executor.execute(() -> {
-            // Feed them initial model
-            models.onNext(model);
-
-            // And from now on...
+            // Set basic cycle
             loopSubscription =
                     actions.subscribeOn(Schedulers.from(executor)).subscribe(action -> {
                         try {
+                            logDebug("Received action");
                             model = model.actUpon(action);
                         } catch (Exception e) {
                             if (exceptionHandler == null) {
                                 model = null;
                                 logError("Exception during model.actUpon", e);
                             } else {
+                                logWarning(
+                                        "Exception during model.actUpon, relying on " +
+                                        "ExceptionHandler",
+                                        e);
                                 model = exceptionHandler.onException(model, action, e);
                             }
                         }
@@ -110,6 +111,9 @@ public abstract class HollywoodApplication {
                     }, throwable -> {
                         logError("Throwable during action->model->actor cycle", throwable);
                     });
+
+            // And feed the initial model
+            models.onNext(model);
         });
     }
 
@@ -130,6 +134,14 @@ public abstract class HollywoodApplication {
      * @param msg warning message
      */
     protected abstract void logWarning(String msg);
+
+    /**
+     * Logs a warning message, with an attached throwable
+     *
+     * @param msg       warning message
+     * @param throwable throwable
+     */
+    protected abstract void logWarning(String msg, Throwable throwable);
 
     /**
      * Logs an error message, with an attached throwable.
