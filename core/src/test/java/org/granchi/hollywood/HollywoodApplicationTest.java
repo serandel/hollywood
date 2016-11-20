@@ -12,12 +12,14 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import rx.Observable;
 import rx.observers.TestSubscriber;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -48,6 +50,29 @@ public class HollywoodApplicationTest {
     @Test(expected = IllegalArgumentException.class)
     public void testCantHaveAnEmptyActorCollection() throws Exception {
         new MockHollywoodApplication(model, Collections.emptyList(), exceptionHandler);
+    }
+
+    @Test
+    public void testAppDoesntRunUntilToldSo() throws Exception {
+        MockHollywoodApplication
+                app =
+                new MockHollywoodApplication(model, Arrays.asList(actor), null);
+        assertThat(app.isRunning()).isFalse();
+    }
+
+    @Test
+    public void testIfNothingHappensAppKeepsRunning() throws Exception {
+        // If the observable of actions from the actor is null then Rx can't subscribe the model
+        // to it and the app exists inmediately
+        when(actor.getActions()).thenReturn(Observable.never());
+
+        MockHollywoodApplication
+                app =
+                new MockHollywoodApplication(model, Arrays.asList(actor), null);
+        app.run();
+
+        Thread.sleep(100);
+        assertThat(app.isRunning()).isTrue();
     }
 
     @Test
@@ -119,9 +144,9 @@ public class HollywoodApplicationTest {
     @Test
     public void testRepeatedActorsAreIgnored() throws Exception {
         when(model.actUpon(action)).thenReturn(model2);
-        when(model2.actUpon(action)).thenReturn(model3);
 
-        when(actor.getActions()).thenReturn(Observable.just(action));
+        when(actor.getActions()).thenReturn(Observable.just(action)
+                                                      .delay(5, TimeUnit.MILLISECONDS));
 
         ArgumentCaptor<Observable<Model>> modelsCaptor = ArgumentCaptor.forClass(Observable.class);
 
@@ -139,10 +164,11 @@ public class HollywoodApplicationTest {
 
         Thread.sleep(10);
 
-        // No model3 because action was received just once
+        // No call on model2 because action was received just once
         subscriber.assertReceivedOnNext(Arrays.asList(model, model2));
+        verify(model2, never()).actUpon(action);
 
-        assertThat(app.isRunning()).isFalse();
+        assertThat(app.isRunning()).isTrue();
     }
 
     @Test
@@ -250,8 +276,15 @@ public class HollywoodApplicationTest {
         }
 
         @Override
+        protected void logWarning(String msg, Throwable throwable) {
+            Logger.getLogger(MockHollywoodApplication.class.getName())
+                  .log(Level.WARNING, msg, throwable);
+        }
+
+        @Override
         protected void logError(String msg, Throwable throwable) {
-            Logger.getLogger(MockHollywoodApplication.class.getName()).severe(msg);
+            Logger.getLogger(MockHollywoodApplication.class.getName())
+                  .log(Level.SEVERE, msg, throwable);
         }
 
         @Override
