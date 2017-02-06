@@ -1,6 +1,7 @@
 package org.granchi.hollywood;
 
-import rx.Observable;
+import io.reactivex.Observable;
+import io.reactivex.ObservableTransformer;
 
 /**
  * Transformer to use in Model Observable, so an Actor can receive only a class of Model he's
@@ -14,13 +15,14 @@ import rx.Observable;
 // class?
 @Deprecated
 public class ModelFilter {
-    public static <M extends Model> Observable.Transformer<? super Model, M> modelOfType(Class<M>
-                                                                                                 modelClass) {
+    public static <M extends Model> ObservableTransformer<? super Model, M> modelOfType(Class<M>
+                                                                                                modelClass) {
         return observable -> observable
                 .ofType(modelClass)
                 .mergeWith(observable
                                    .ofType(CompositeModel.class)
-                                   .flatMap(composite -> Observable.from(composite.getModels())
+                                   .flatMap(composite -> Observable.fromIterable(composite
+                                                                                         .getModels())
                                                                    .ofType(modelClass)));
     }
 }
