@@ -29,7 +29,7 @@ import io.reactivex.subjects.Subject;
  * @author serandel
  */
 public abstract class HollywoodApplication {
-    private final Logger log;
+    private static final Logger log = LoggerFactory.getLogger(HollywoodApplication.class);
 
     protected final Executor executor;
 
@@ -62,8 +62,6 @@ public abstract class HollywoodApplication {
         } else if (actors.isEmpty()) {
             throw new IllegalArgumentException("Empty actor collection");
         }
-
-        log = LoggerFactory.getLogger(getClass());
 
         this.model = initialModel;
         models = BehaviorSubject.create();
