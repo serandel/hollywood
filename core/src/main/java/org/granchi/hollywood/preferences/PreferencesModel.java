@@ -8,6 +8,7 @@ import org.granchi.hollywood.Model;
  *
  * @author serandel
  */
+// TODO do we really want a preferences model or get them integrated into the business logic?
 public abstract class PreferencesModel implements Model {
     @Override
     public Model actUpon(Action action) {
