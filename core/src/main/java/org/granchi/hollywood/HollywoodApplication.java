@@ -1,5 +1,8 @@
 package org.granchi.hollywood;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -27,7 +30,7 @@ import io.reactivex.subjects.Subject;
 // TODO put logger in a new class?
 public abstract class HollywoodApplication {
     protected final Executor executor;
-
+    private final Logger log;
     private Model model;
     private Subject<Model> models;
     private Observable<Action> actions;
@@ -53,6 +56,8 @@ public abstract class HollywoodApplication {
         } else if (actors.isEmpty()) {
             throw new IllegalArgumentException("Empty actor collection");
         }
+
+        log = LoggerFactory.getLogger(getClass());
 
         this.model = initialModel;
         models = BehaviorSubject.create();
@@ -84,14 +89,14 @@ public abstract class HollywoodApplication {
             loopDisposable =
                     actions.subscribeOn(Schedulers.from(executor)).subscribe(action -> {
                         try {
-                            logDebug("Received action");
+                            log.debug("Received action: {}", action);
                             model = model.actUpon(action);
                         } catch (Exception e) {
                             if (exceptionHandler == null) {
                                 model = null;
-                                logError("Exception during model.actUpon", e);
+                                log.error("Exception during model.actUpon", e);
                             } else {
-                                logWarning(
+                                log.warn(
                                         "Exception during model.actUpon, relying on " +
                                         "ExceptionHandler",
                                         e);
@@ -101,7 +106,7 @@ public abstract class HollywoodApplication {
 
                         // Unrecoverable state, there is no model
                         if (model == null) {
-                            logInfo("Ending cycle: model null");
+                            log.info("Ending cycle: model null");
 
                             // We're done!
                             models.onComplete();
@@ -110,7 +115,7 @@ public abstract class HollywoodApplication {
                             models.onNext(model);
                         }
                     }, throwable -> {
-                        logError("Throwable during action->model->actor cycle", throwable);
+                        log.error("Throwable during action->model->actor cycle", throwable);
                     });
 
             // And feed the initial model
@@ -128,41 +133,4 @@ public abstract class HollywoodApplication {
     public boolean isRunning() {
         return loopDisposable != null && !loopDisposable.isDisposed();
     }
-
-    /**
-     * Logs a warning message.
-     *
-     * @param msg warning message
-     */
-    protected abstract void logWarning(String msg);
-
-    /**
-     * Logs a warning message, with an attached throwable
-     *
-     * @param msg       warning message
-     * @param throwable throwable
-     */
-    protected abstract void logWarning(String msg, Throwable throwable);
-
-    /**
-     * Logs an error message, with an attached throwable.
-     *
-     * @param msg       error message
-     * @param throwable throwable
-     */
-    protected abstract void logError(String msg, Throwable throwable);
-
-    /**
-     * Logs a info message.
-     *
-     * @param msg info message
-     */
-    protected abstract void logInfo(String msg);
-
-    /**
-     * Logs a debug message.
-     *
-     * @param msg debug message
-     */
-    protected abstract void logDebug(String msg);
 }

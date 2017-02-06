@@ -16,6 +16,8 @@ description = "An opinionated, Android-aware, Java functional reactive framework
 
 dependencies {
     compile 'io.reactivex.rxjava2:rxjava:2.0.4'
+    compile 'org.slf4j:slf4j-api:1.7.21'
+
     testCompile 'junit:junit:4.12'
     testCompile 'org.mockito:mockito-core:2.6.8'
     testCompile 'com.google.truth:truth:0.31'
