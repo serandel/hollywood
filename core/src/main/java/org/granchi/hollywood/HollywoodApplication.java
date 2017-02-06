@@ -7,11 +7,11 @@ import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
-import rx.Observable;
-import rx.Subscription;
-import rx.schedulers.Schedulers;
-import rx.subjects.BehaviorSubject;
-import rx.subjects.Subject;
+import io.reactivex.Observable;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
+import io.reactivex.subjects.BehaviorSubject;
+import io.reactivex.subjects.Subject;
 
 /**
  * Hollywood application.
@@ -27,10 +27,11 @@ import rx.subjects.Subject;
 // TODO put logger in a new class?
 public abstract class HollywoodApplication {
     protected final Executor executor;
+
     private Model model;
-    private Subject<Model, Model> models;
+    private Subject<Model> models;
     private Observable<Action> actions;
-    private Subscription loopSubscription;
+    private Disposable loopDisposable;
     private ModelExceptionHandler exceptionHandler;
 
     /**
@@ -80,7 +81,7 @@ public abstract class HollywoodApplication {
     public void run() {
         executor.execute(() -> {
             // Set basic cycle
-            loopSubscription =
+            loopDisposable =
                     actions.subscribeOn(Schedulers.from(executor)).subscribe(action -> {
                         try {
                             logDebug("Received action");
@@ -103,8 +104,8 @@ public abstract class HollywoodApplication {
                             logInfo("Ending cycle: model null");
 
                             // We're done!
-                            models.onCompleted();
-                            loopSubscription.unsubscribe();
+                            models.onComplete();
+                            loopDisposable.dispose();
                         } else {
                             models.onNext(model);
                         }
@@ -125,7 +126,7 @@ public abstract class HollywoodApplication {
      * @return if the application is running
      */
     public boolean isRunning() {
-        return loopSubscription != null && !loopSubscription.isUnsubscribed();
+        return loopDisposable != null && !loopDisposable.isDisposed();
     }
 
     /**

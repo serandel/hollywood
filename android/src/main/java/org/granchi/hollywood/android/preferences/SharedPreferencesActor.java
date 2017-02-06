@@ -6,9 +6,9 @@ import org.granchi.hollywood.Model;
 import org.granchi.hollywood.ModelFilter;
 import org.granchi.hollywood.preferences.PreferencesModel;
 
-import rx.Observable;
-import rx.schedulers.Schedulers;
-import rx.subjects.PublishSubject;
+import io.reactivex.Observable;
+import io.reactivex.schedulers.Schedulers;
+import io.reactivex.subjects.PublishSubject;
 
 /**
  * Actor for manipulating SharedPreferences.

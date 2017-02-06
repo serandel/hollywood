@@ -1,6 +1,6 @@
 package org.granchi.hollywood;
 
-import rx.Observable;
+import io.reactivex.Observable;
 
 /**
  * An Actor is a mutable entity that receives models from the application and makes any side effect
