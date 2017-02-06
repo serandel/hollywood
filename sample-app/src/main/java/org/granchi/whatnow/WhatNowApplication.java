@@ -1,7 +1,7 @@
 package org.granchi.whatnow;
 
+import org.granchi.hollywood.HollywoodApplication;
 import org.granchi.hollywood.android.HollywoodAndroidApplication;
-import org.granchi.hollywood.android.HollywoodAndroidApplicationCompanion;
 import org.granchi.whatnow.framework.dagger.DaggerWhatNowComponent;
 import org.granchi.whatnow.framework.dagger.WhatNowModule;
 
@@ -14,7 +14,7 @@ import javax.inject.Inject;
  */
 public class WhatNowApplication extends HollywoodAndroidApplication {
     @Inject
-    HollywoodAndroidApplicationCompanion companion;
+    HollywoodApplication hollywood;
 
     @Override
     public void onCreate() {
@@ -36,12 +36,12 @@ public class WhatNowApplication extends HollywoodAndroidApplication {
     }
 
     @Override
-    protected HollywoodAndroidApplicationCompanion createHollywoodCompanion() {
-        return companion;
+    protected HollywoodApplication provideHollywoodApp() {
+        return hollywood;
     }
 
     @Override
-    public void showError(String msg) {
+    public void showError(Exception exception) {
         // TODO snackbar, toast or whatever
     }
 }

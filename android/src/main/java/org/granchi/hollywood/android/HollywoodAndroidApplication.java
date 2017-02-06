@@ -2,6 +2,8 @@ package org.granchi.hollywood.android;
 
 import android.app.Application;
 
+import org.granchi.hollywood.HollywoodApplication;
+
 /**
  * Android application, powered by Hollywood.
  * <p>
@@ -14,31 +16,31 @@ import android.app.Application;
  * @author serandel
  */
 public abstract class HollywoodAndroidApplication extends Application {
-    private HollywoodAndroidApplicationCompanion hollywoodApp;
+    private HollywoodApplication hollywood;
 
     @Override
     public void onCreate() {
         super.onCreate();
 
-        hollywoodApp = createHollywoodCompanion();
+        hollywood = provideHollywoodApp();
 
-        hollywoodApp.run();
+        hollywood.getExceptions().subscribe();
+
+        hollywood.run();
     }
 
-
-
     /**
-     * Creates the HollywoodAndroidApplicationCompanion instance, tipically through whatever
-     * dependency injection framework the app is using.
+     * Provides the HollywoodApplication instance, tipically through whatever dependency injection
+     * framework the app is using or just creating it.
      *
-     * @return HollywoodAndroidApplicationCompanion
+     * @return HollywoodApplication
      */
-    protected abstract HollywoodAndroidApplicationCompanion createHollywoodCompanion();
+    protected abstract HollywoodApplication provideHollywoodApp();
 
     /**
      * Shows an error to the user.
      *
-     * @param msg message
+     * @param exception exception
      */
-    public abstract void showError(String msg);
+    public abstract void showError(Exception exception);
 }

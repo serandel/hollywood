@@ -14,6 +14,7 @@ import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subjects.BehaviorSubject;
+import io.reactivex.subjects.PublishSubject;
 import io.reactivex.subjects.Subject;
 
 /**
@@ -27,13 +28,17 @@ import io.reactivex.subjects.Subject;
  *
  * @author serandel
  */
-// TODO put logger in a new class?
 public abstract class HollywoodApplication {
-    protected final Executor executor;
     private final Logger log;
+
+    protected final Executor executor;
+
     private Model model;
     private Subject<Model> models;
     private Observable<Action> actions;
+
+    private Subject<Exception> exceptions;
+
     private Disposable loopDisposable;
 
     private ModelExceptionHandler exceptionHandler;
@@ -71,6 +76,8 @@ public abstract class HollywoodApplication {
             actionObservables.add(actor.getActions());
         }
         actions = Observable.merge(actionObservables);
+
+        exceptions = PublishSubject.create();
 
         this.exceptionHandler = exceptionHandler;
 
@@ -133,5 +140,18 @@ public abstract class HollywoodApplication {
      */
     public boolean isRunning() {
         return loopDisposable != null && !loopDisposable.isDisposed();
+    }
+
+
+    /**
+     * Returns an observable of all the possible exceptions during the loop, that completes if the
+     * application stops running.
+     * <p>
+     * An application can use it to show errors to the user.
+     *
+     * @return exceptions
+     */
+    public Observable<Exception> getExceptions() {
+        return exceptions;
     }
 }
