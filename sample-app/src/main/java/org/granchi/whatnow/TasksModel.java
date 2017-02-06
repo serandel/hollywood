@@ -2,11 +2,9 @@ package org.granchi.whatnow;
 
 import org.granchi.hollywood.Action;
 import org.granchi.hollywood.Model;
-import org.granchi.hollywood.SingleInstanceActorMetadata;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 import javax.inject.Inject;
 
@@ -15,7 +13,7 @@ import javax.inject.Inject;
  *
  * @author serandel
  */
-public class TasksModel implements Model<SingleInstanceActorMetadata> {
+public class TasksModel implements Model {
     public final List<Task> tasks;
 
     @Inject
@@ -24,12 +22,7 @@ public class TasksModel implements Model<SingleInstanceActorMetadata> {
     }
 
     @Override
-    public Model<SingleInstanceActorMetadata> actUpon(Action action) {
+    public Model actUpon(Action action) {
         return this;
-    }
-
-    @Override
-    public Set<SingleInstanceActorMetadata> getActors() {
-        return null;
     }
 }
