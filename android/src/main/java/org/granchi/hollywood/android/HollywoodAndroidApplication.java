@@ -2,10 +2,6 @@ package org.granchi.hollywood.android;
 
 import android.app.Application;
 
-import java.util.List;
-
-import timber.log.Timber;
-
 /**
  * Android application, powered by Hollywood.
  * <p>
@@ -24,38 +20,12 @@ public abstract class HollywoodAndroidApplication extends Application {
     public void onCreate() {
         super.onCreate();
 
-        initializeLogging();
-
         hollywoodApp = createHollywoodCompanion();
 
         hollywoodApp.run();
     }
 
-    /**
-     * Initializes logger via Timber.
-     */
-    private void initializeLogging() {
-        List<Timber.Tree> trees = getLoggingTrees();
 
-        if (trees != null && !trees.isEmpty()) {
-            for (Timber.Tree tree : trees) {
-                Timber.plant(tree);
-            }
-
-            Timber.i("Logging initialized");
-        }
-    }
-
-
-    /**
-     * Gets the list of Timber trees, to initialize the logging system.
-     *
-     * @return list of trees, null or empty to disable logging
-     */
-    protected List<Timber.Tree> getLoggingTrees() {
-        // Nothing by default
-        return null;
-    }
 
     /**
      * Creates the HollywoodAndroidApplicationCompanion instance, tipically through whatever

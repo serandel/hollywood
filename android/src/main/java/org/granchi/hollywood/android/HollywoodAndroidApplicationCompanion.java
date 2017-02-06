@@ -7,8 +7,6 @@ import org.granchi.hollywood.ModelExceptionHandler;
 
 import java.util.Collection;
 
-import timber.log.Timber;
-
 /**
  * The real HollywoodApplication to be used by the HollywoodAndroidApplication delegate.
  *
@@ -17,6 +15,7 @@ import timber.log.Timber;
 // TODO creation parameters
 public class HollywoodAndroidApplicationCompanion extends
                                                   HollywoodApplication {
+    // TODO keep it or not?
     private final HollywoodAndroidApplication app;
 
     /**
@@ -40,33 +39,5 @@ public class HollywoodAndroidApplicationCompanion extends
 
         // No logError should happen in the constructor, it can wait till run()
         this.app = app;
-    }
-
-    @Override
-    protected void logWarning(String msg) {
-        Timber.w(msg);
-
-    }
-
-    @Override
-    protected void logWarning(String msg, Throwable throwable) {
-        Timber.w(throwable, msg);
-    }
-
-    @Override
-    protected void logError(String msg, Throwable throwable) {
-        Timber.e(throwable, msg);
-
-        app.showError(msg);
-    }
-
-    @Override
-    protected void logInfo(String msg) {
-        Timber.i(msg);
-    }
-
-    @Override
-    protected void logDebug(String msg) {
-        Timber.d(msg);
     }
 }

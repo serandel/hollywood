@@ -35,6 +35,7 @@ public abstract class HollywoodApplication {
     private Subject<Model> models;
     private Observable<Action> actions;
     private Disposable loopDisposable;
+
     private ModelExceptionHandler exceptionHandler;
 
     /**
