@@ -11,7 +11,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 import io.reactivex.Observable;
-import io.reactivex.disposables.Disposable;
+import io.reactivex.observers.DisposableObserver;
 import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.PublishSubject;
@@ -31,15 +31,12 @@ import io.reactivex.subjects.Subject;
 public abstract class HollywoodApplication {
     private static final Logger log = LoggerFactory.getLogger(HollywoodApplication.class);
 
-    protected final Executor executor;
-
     private Model model;
     private Subject<Model> models;
     private Observable<Action> actions;
 
-    private Subject<Exception> exceptions;
-
-    private Disposable loopDisposable;
+    // It doubles as a flag to check if the application has been run
+    private Executor executor;
 
     private ModelExceptionHandler exceptionHandler;
 
@@ -75,12 +72,7 @@ public abstract class HollywoodApplication {
         }
         actions = Observable.merge(actionObservables);
 
-        exceptions = PublishSubject.create();
-
         this.exceptionHandler = exceptionHandler;
-
-        // Every cycle goes in the same thread
-        executor = Executors.newSingleThreadExecutor();
     }
 
     /**
@@ -88,68 +80,87 @@ public abstract class HollywoodApplication {
      * <p>
      * Creates a new Thread that executes action->model->actor cycles in a loop until Model becomes
      * null.
+     *
+     * @return observable with all the possible exceptions that can arise during the loop, it will
+     * complete when the loop finishes, if ever
+     *
+     * @throws IllegalStateException if the application is already running or was running in the
+     *                               past
      */
-    public void run() {
+    public synchronized Observable<Exception> run() {
+        if (executor != null) {
+            throw new IllegalStateException(
+                    "Application is already running or stopped after running");
+        }
+
+        // Every cycle goes in the same thread
+        executor = Executors.newSingleThreadExecutor();
+        Subject<Exception> exceptions = PublishSubject.create();
+
         executor.execute(() -> {
-            // Set basic cycle
-            loopDisposable =
-                    actions.subscribeOn(Schedulers.from(executor)).subscribe(action -> {
-                        try {
-                            log.debug("Received action: {}", action);
-                            model = model.actUpon(action);
-                        } catch (Exception e) {
-                            if (exceptionHandler == null) {
-                                model = null;
-                                log.error("Exception during model.actUpon", e);
-                            } else {
-                                log.warn(
-                                        "Exception during model.actUpon, relying on " +
-                                        "ExceptionHandler",
-                                        e);
-                                model = exceptionHandler.onException(model, action, e);
-                            }
-                        }
+            actions.subscribeOn(Schedulers.from(executor))
+                   .subscribe(
+                           new DisposableObserver<Action>() {
+                               @Override
+                               public void onNext(Action action) {
+                                   try {
+                                       log.debug("Received action: {}", action);
+                                       model = model.actUpon(action);
+                                   } catch (Exception e) {
+                                       if (exceptionHandler == null) {
+                                           model = null;
 
-                        // Unrecoverable state, there is no model
-                        if (model == null) {
-                            log.info("Ending cycle: model null");
+                                           String msg = "Exception during model.actUpon";
+                                           log.error(msg, e);
 
-                            // We're done!
-                            models.onComplete();
-                            loopDisposable.dispose();
-                        } else {
-                            models.onNext(model);
-                        }
-                    }, throwable -> {
-                        log.error("Throwable during action->model->actor cycle", throwable);
-                    });
+                                           exceptions.onNext(new RuntimeException(msg, e));
+                                       } else {
+                                           String
+                                                   msg =
+                                                   "Exception during model.actUpon, relying on " +
+                                                   "ExceptionHandler";
+                                           log.warn(msg, e);
 
-            // And feed the initial model
+                                           // TODO perhaps pass exceptions subject too
+                                           model = exceptionHandler.onException(model, action, e);
+                                       }
+                                   }
+
+                                   // Unrecoverable state, there is no model
+                                   if (model == null) {
+                                       log.info("Ending cycle: model null");
+
+                                       // We're done!
+                                       models.onComplete();
+                                       exceptions.onComplete();
+
+                                       dispose();
+                                   } else {
+                                       models.onNext(model);
+                                   }
+                               }
+
+                               @Override
+                               public void onError(Throwable throwable) {
+                                   String msg = "Throwable during action->model->actor cycle";
+
+                                   log.error(msg, throwable);
+
+                                   exceptions.onNext(new RuntimeException(msg, throwable));
+                                   exceptions.onComplete();
+                               }
+
+                               @Override
+                               public void onComplete() {
+                                   // It won't happen, as the actors don't close their action
+                                   // observables ever
+                               }
+                           });
+
+            // Start the loop by feeding the initial model
             models.onNext(model);
         });
-    }
 
-    /**
-     * Says if the application is currently running.
-     * <p>
-     * If not, it can be that run() hasn't been invoked or that the cycle has ended.
-     *
-     * @return if the application is running
-     */
-    public boolean isRunning() {
-        return loopDisposable != null && !loopDisposable.isDisposed();
-    }
-
-
-    /**
-     * Returns an observable of all the possible exceptions during the loop, that completes if the
-     * application stops running.
-     * <p>
-     * An application can use it to show errors to the user.
-     *
-     * @return exceptions
-     */
-    public Observable<Exception> getExceptions() {
         return exceptions;
     }
 }
