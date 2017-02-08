@@ -24,9 +24,10 @@ public abstract class HollywoodAndroidApplication extends Application {
 
         hollywood = provideHollywoodApp();
 
-        hollywood.getExceptions().subscribe();
-
-        hollywood.run();
+        hollywood.run()
+                 .subscribe(this::onHollywoodError,
+                            this::onHollywoodError,
+                            this::onHollywoodFinished);
     }
 
     /**
@@ -38,9 +39,18 @@ public abstract class HollywoodAndroidApplication extends Application {
     protected abstract HollywoodApplication provideHollywoodApp();
 
     /**
-     * Shows an error to the user.
+     * Gets called when the HollywoodApplication throws an error in its execution cycle.
+     * <p>
+     * The parameter is a Throwable, not an Exception, because the callback is used for the onError
+     * of the Exception Observable too.
      *
-     * @param exception exception
+     * @param th throwable
      */
-    public abstract void showError(Exception exception);
+    protected abstract void onHollywoodError(Throwable th);
+
+    /**
+     * Gets called when the HollywoodApplication finishes its execution cycle without error, what,
+     * ironically, it's an error itself, because the model becomes frozen forever.
+     */
+    protected abstract void onHollywoodFinished();
 }

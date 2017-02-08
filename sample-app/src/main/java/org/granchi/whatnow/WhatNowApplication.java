@@ -41,7 +41,12 @@ public class WhatNowApplication extends HollywoodAndroidApplication {
     }
 
     @Override
-    public void showError(Exception exception) {
-        // TODO snackbar, toast or whatever
+    protected void onHollywoodError(Throwable th) {
+        // TODO show a Dialog, Snack, Toast or whatever
+    }
+
+    @Override
+    protected void onHollywoodFinished() {
+        // TODO show a Dialog, Snack, Toast or whatever
     }
 }
