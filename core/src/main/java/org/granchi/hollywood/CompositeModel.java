@@ -13,7 +13,7 @@ import java.util.Set;
  *
  * @author serandel
  */
-public class CompositeModel implements Model {
+public class CompositeModel extends Model {
     private Set<Model> models;
 
 
