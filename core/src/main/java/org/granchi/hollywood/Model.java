@@ -1,5 +1,8 @@
 package org.granchi.hollywood;
 
+import java.util.Collection;
+import java.util.Collections;
+
 /**
  * Model for a Hollywood application.
  * <p>
@@ -13,7 +16,7 @@ package org.granchi.hollywood;
  *
  * @author serandel
  */
-public interface Model {
+public abstract class Model {
     /**
      * Generates a new model, from itself and the data contained in an action.
      * <p>
@@ -22,5 +25,22 @@ public interface Model {
      * @param action action, can't be null
      * @return new model
      */
-    Model actUpon(Action action);
+    abstract Model actUpon(Action action);
+
+    /**
+     * Returns itself if it's of a specific class or a subclass of it, or, for composite models, the
+     * submodels that are compliant with the same condition.
+     *
+     * @param type desired class
+     * @param <T>  type of the desired class
+     * @return model of submodel of that class
+     */
+    @SuppressWarnings("unchecked")
+    public <T extends Model> Collection<T> getSubmodelOfType(Class<T> type) {
+        if (type.isAssignableFrom(this.getClass())) {
+            return Collections.singletonList((T) this);
+        } else {
+            return Collections.emptyList();
+        }
+    }
 }
