@@ -82,7 +82,7 @@ public class HollywoodApplicationTest {
                 execution =
                 new HollywoodApplication(model, Arrays.asList(actor), null).run();
 
-        Thread.sleep(10);
+        Thread.sleep(20);
 
         execution.test()
                  .assertNoValues()
