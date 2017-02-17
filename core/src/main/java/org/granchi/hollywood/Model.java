@@ -25,7 +25,7 @@ public abstract class Model {
      * @param action action, can't be null
      * @return new model
      */
-    abstract Model actUpon(Action action);
+    protected abstract Model actUpon(Action action);
 
     /**
      * Returns itself if it's of a specific class or a subclass of it, or, for composite models, the

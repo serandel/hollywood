@@ -13,7 +13,7 @@ import javax.inject.Inject;
  *
  * @author serandel
  */
-public class TasksModel implements Model {
+public class TasksModel extends Model {
     public final List<Task> tasks;
 
     @Inject
@@ -22,7 +22,7 @@ public class TasksModel implements Model {
     }
 
     @Override
-    public Model actUpon(Action action) {
+    protected Model actUpon(Action action) {
         return this;
     }
 }
