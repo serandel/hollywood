@@ -28,7 +28,7 @@ import io.reactivex.subjects.Subject;
  *
  * @author serandel
  */
-public abstract class HollywoodApplication {
+public class HollywoodApplication {
     private static final Logger log = LoggerFactory.getLogger(HollywoodApplication.class);
 
     private Model model;
