@@ -1,74 +1,112 @@
 package org.granchi.hollywood;
 
+import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+
+import java.util.Arrays;
+import java.util.Collections;
+
+import io.reactivex.Observable;
+
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class HollywoodApplicationTest {
-//    @Mock
-//    private Model model, model2, model3;
+    @Mock
+    private Model model;
+    // , model2, model3;
 //
-//    @Mock
-//    private Actor actor, actor2;
+    @Mock
+    private Actor actor, actor2;
+
+    @Mock
+    private Action action;
+    // , action2, action3;
 //
-//    @Mock
-//    private Action action, action2, action3;
-//
-//    @Mock
-//    private ModelExceptionHandler exceptionHandler;
-//
-//    @Test(expected = NullPointerException.class)
-//    public void testCantHaveANullModel() throws Exception {
-//        new MockHollywoodApplication(null, Arrays.asList(actor, actor2), exceptionHandler);
-//    }
-//
-//    @Test(expected = NullPointerException.class)
-//    public void testCantHaveANullActorCollection() throws Exception {
-//        new MockHollywoodApplication(model, null, exceptionHandler);
-//    }
-//
-//    @Test(expected = IllegalArgumentException.class)
-//    public void testCantHaveAnEmptyActorCollection() throws Exception {
-//        new MockHollywoodApplication(model, Collections.emptyList(), exceptionHandler);
-//    }
-//
-//    @Test
-//    public void testAppDoesntRunUntilToldSo() throws Exception {
-//        MockHollywoodApplication
-//                app =
-//                new MockHollywoodApplication(model, Arrays.asList(actor), null);
-//        assertThat(app.isRunning()).isFalse();
-//    }
-//
-//    @Test
-//    public void testIfNothingHappensAppKeepsRunning() throws Exception {
-//        // If the observable of actions from the actor is null then Rx can't subscribe the model
-//        // to it and the app exists inmediately
-//        when(actor.getActions()).thenReturn(Observable.never());
-//
-//        MockHollywoodApplication
-//                app =
-//                new MockHollywoodApplication(model, Arrays.asList(actor), null);
-//        app.run();
-//
-//        Thread.sleep(100);
-//        assertThat(app.isRunning()).isTrue();
-//    }
-//
-//    @Test
-//    public void testNullModelEndsApp() throws Exception {
-//        when(actor.getActions()).thenReturn(Observable.just(action));
-//        when(model.actUpon(action)).thenReturn(null);
-//
-//        MockHollywoodApplication
-//                app =
-//                new MockHollywoodApplication(model, Arrays.asList(actor), null);
-//        app.run();
-//
-//        Thread.sleep(100);
-//        assertThat(app.isRunning()).isFalse();
-//    }
-//
+    @Mock
+    private ModelExceptionHandler exceptionHandler;
+
+    @Test(expected = NullPointerException.class)
+    public void testCantHaveANullModel() throws Exception {
+        new HollywoodApplication(null, Arrays.asList(actor, actor2), exceptionHandler);
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void testCantHaveANullActorCollection() throws Exception {
+        new HollywoodApplication(model, null, exceptionHandler);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testCantHaveAnEmptyActorCollection() throws Exception {
+        new HollywoodApplication(model, Collections.emptyList(), exceptionHandler);
+    }
+
+    @Test
+    public void testIfNothingHappensAppKeepsRunning() throws Exception {
+        // If the observable of actions from the actor is null then Rx can't subscribe the model
+        // to it and the app exists inmediately
+        when(actor.getActions()).thenReturn(Observable.never());
+
+        Observable<Exception>
+                execution =
+                new HollywoodApplication(model, Arrays.asList(actor), null).run();
+
+        Thread.sleep(10);
+
+        execution.test()
+                 .assertNoValues()
+                 .assertNotTerminated();
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testCantRunTwiceAtTheSameTime() throws Exception {
+        // If the observable of actions from the actor is null then Rx can't subscribe the model
+        // to it and the app exists inmediately
+        when(actor.getActions()).thenReturn(Observable.never());
+
+        HollywoodApplication app =
+                new HollywoodApplication(model, Arrays.asList(actor), null);
+        app.run();
+        app.run();
+    }
+
+    @Test
+    public void testNullModelEndsApp() throws Exception {
+        when(actor.getActions()).thenReturn(Observable.just(action));
+        when(model.actUpon(action)).thenReturn(null);
+
+
+        Observable<Exception>
+                execution =
+                new HollywoodApplication(model, Arrays.asList(actor), null).run();
+
+        Thread.sleep(10);
+
+        execution.test()
+                 .assertNoValues()
+                 .assertComplete();
+    }
+
+    @Test
+    public void testAppCanBeRelaunched() throws Exception {
+        when(actor.getActions()).thenReturn(Observable.never());
+
+        HollywoodApplication app =
+                new HollywoodApplication(model, Arrays.asList(actor), null);
+        app.run()
+           .subscribe((exception) -> {
+                          // Nothing
+                      },
+                      (throwable) -> {
+                          // Nothing
+                      },
+                      app::run);
+
+        Thread.sleep(10);
+    }
+
 //    @Test(timeout = 1000)
 //    @SuppressWarnings("unchecked")
 //    public void testBasicCycle() throws Exception {
@@ -243,40 +281,5 @@ public class HollywoodApplicationTest {
 //        verify(model).actUpon(action);
 //        verify(model2).actUpon(action2);
 //        assertThat(app.isRunning()).isFalse();
-//    }
-//
-//    private class MockHollywoodApplication extends HollywoodApplication {
-//        public MockHollywoodApplication(Model initialModel,
-//                                        Collection<Actor> actors,
-//                                        ModelExceptionHandler exceptionHandler) {
-//            super(initialModel, actors, exceptionHandler);
-//        }
-//
-//        @Override
-//        protected void logWarning(String msg) {
-//            Logger.getLogger(MockHollywoodApplication.class.getName()).warning(msg);
-//        }
-//
-//        @Override
-//        protected void logWarning(String msg, Throwable throwable) {
-//            Logger.getLogger(MockHollywoodApplication.class.getName())
-//                  .log(Level.WARNING, msg, throwable);
-//        }
-//
-//        @Override
-//        protected void logError(String msg, Throwable throwable) {
-//            Logger.getLogger(MockHollywoodApplication.class.getName())
-//                  .log(Level.SEVERE, msg, throwable);
-//        }
-//
-//        @Override
-//        protected void logInfo(String msg) {
-//            Logger.getLogger(MockHollywoodApplication.class.getName()).info(msg);
-//        }
-//
-//        @Override
-//        protected void logDebug(String msg) {
-//            Logger.getLogger(MockHollywoodApplication.class.getName()).fine(msg);
-//        }
 //    }
 }

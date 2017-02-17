@@ -106,6 +106,8 @@ public class CompositeModelTest {
 //        verify(model5).actUpon(action);
 //    }
 
+    // TODO if it's empty replace itself with null
+
     @Test
     public void testCompositeResultModelsAreAggregatedSoNoDuplications() {
         when(model1.actUpon(action)).thenReturn(new CompositeModel(new HashSet<>(Arrays.asList(
