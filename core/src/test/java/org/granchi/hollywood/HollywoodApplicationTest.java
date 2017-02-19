@@ -11,7 +11,9 @@ import java.util.concurrent.TimeUnit;
 
 import io.reactivex.Observable;
 import io.reactivex.observers.TestObserver;
+import io.reactivex.schedulers.Schedulers;
 
+import static com.google.common.truth.Truth.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -187,40 +189,32 @@ public class HollywoodApplicationTest {
 //        assertThat(app.isRunning()).isTrue();
 //    }
 //
-//    @Test
-//    public void testActionsAreDeliveredInSameThread() throws Exception {
-//        final Thread[] threads = new Thread[2];
-//
-//        when(model.actUpon(action)).thenAnswer(new Answer<Model>() {
-//            @Override
-//            public Model answer(InvocationOnMock invocation) throws Throwable {
-//                threads[0] = Thread.currentThread();
-//                return model;
-//            }
-//        });
-//        when(model.actUpon(action2)).thenAnswer(new Answer<Model>() {
-//            @Override
-//            public Model answer(InvocationOnMock invocation) throws Throwable {
-//                threads[1] = Thread.currentThread();
-//                return model;
-//            }
-//        });
-//
-//        when(actor.getActions()).thenReturn(Observable.just(action));
-//        when(actor2.getActions()).thenReturn(Observable.just(action2));
-//
-//        MockHollywoodApplication
-//                app =
-//                new MockHollywoodApplication(model, Arrays.asList(actor, actor2), null);
-//
-//        // Running
-//        app.run();
-//
-//        Thread.sleep(10);
-//
-//        assertThat(threads[0]).isEqualTo(threads[1]);
-//    }
-//
+    @Test
+    public void testActionsAreDeliveredInSameThread() throws Exception {
+        final Thread[] threads = new Thread[2];
+
+        when(model.actUpon(action)).thenAnswer(invocation -> {
+            threads[0] = Thread.currentThread();
+            return model;
+        });
+        when(model.actUpon(action2)).thenAnswer(invocation -> {
+            threads[1] = Thread.currentThread();
+            return model;
+        });
+
+        when(actor.getActions()).thenReturn(Observable.just(action).subscribeOn(Schedulers
+                                                                                        .newThread()));
+        when(actor2.getActions()).thenReturn(Observable.just(action2).subscribeOn(Schedulers
+                                                                                          .newThread()));
+
+        new HollywoodApplication(model, Arrays.asList(actor, actor2), null)
+                .run()
+                .test()
+                .awaitDone(TIMEOUT_FOR_EXECUTION_TO_FINISH, TimeUnit.MILLISECONDS);
+
+        assertThat(threads[0]).isEqualTo(threads[1]);
+    }
+
     @Test
     public void testExceptionInModelWithoutHandlerEndsApp() throws Exception {
         RuntimeException ex = new RuntimeException();

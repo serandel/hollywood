@@ -98,7 +98,7 @@ public class HollywoodApplication {
         Subject<RuntimeException> execution = PublishSubject.create();
 
         executor.execute(() -> {
-            actions.subscribeOn(Schedulers.from(executor))
+            actions.observeOn(Schedulers.from(executor))
                    .subscribe(
                            new DisposableObserver<Action>() {
                                @Override
