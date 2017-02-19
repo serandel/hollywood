@@ -21,6 +21,8 @@ dependencies {
     testCompile 'junit:junit:4.12'
     testCompile 'org.mockito:mockito-core:2.6.8'
     testCompile 'com.google.truth:truth:0.31'
+    // Just to see logs in console during unit tests
+    testCompile 'ch.qos.logback:logback-classic:1.2.1'
 
     retrolambdaConfig 'net.orfjackal.retrolambda:retrolambda:2.5.0'
 }
