@@ -2,6 +2,7 @@ package org.granchi.hollywood;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
@@ -12,8 +13,10 @@ import java.util.concurrent.TimeUnit;
 import io.reactivex.Observable;
 import io.reactivex.observers.TestObserver;
 import io.reactivex.schedulers.Schedulers;
+import io.reactivex.subjects.PublishSubject;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -23,9 +26,8 @@ public class HollywoodApplicationTest {
     public static final int TIMEOUT_FOR_EXECUTION_TO_FINISH = 200;
 
     @Mock
-    private Model model, model2;
-    // , model2, model3;
-//
+    private Model model, model2, model3;
+
     @Mock
     private Actor actor, actor2;
 
@@ -61,7 +63,8 @@ public class HollywoodApplicationTest {
                 .test()
                 .awaitDone(TIMEOUT_FOR_EXECUTION_TO_FINISH, TimeUnit.MILLISECONDS)
                 .assertNoValues()
-                .assertNotTerminated();
+                .assertNotTerminated()
+                .dispose();
     }
 
     @Test(expected = IllegalStateException.class)
@@ -105,90 +108,81 @@ public class HollywoodApplicationTest {
         app.run();
     }
 
-    //    @Test(timeout = 1000)
-//    @SuppressWarnings("unchecked")
-//    public void testBasicCycle() throws Exception {
-//        ArgumentCaptor<Observable<Model>> modelsCaptor = ArgumentCaptor.forClass(Observable
-// .class);
-//
-//        // Delay is so isRunning will get the app still running
-//        Observable<Action>
-//                actions1 =
-//                Observable.just(action, action2).delay(50, TimeUnit.MILLISECONDS);
-//        Observable<Action>
-//                actions2 =
-//                Observable.just(action3).delay(100, TimeUnit.MILLISECONDS);
-//
-//        // Models act upon Actions
-//        when(model.actUpon(action)).thenReturn(model2);
-//        when(model2.actUpon(action2)).thenReturn(model3);
-//        when(model3.actUpon(action3)).thenReturn(null);
-//
-//        // Actions come from Actors
-//        when(actor.getActions()).thenReturn(actions1);
-//        when(actor2.getActions()).thenReturn(actions2);
-//
-//        MockHollywoodApplication
-//                app =
-//                new MockHollywoodApplication(model, Arrays.asList(actor, actor2), null);
-//
-//        // Actors receive Models
-//        verify(actor).subscribeTo(modelsCaptor.capture());
-//        Observable<Model> models = modelsCaptor.getValue();
-//        verify(actor2).subscribeTo(models);
-//        TestSubscriber<Model> subscriber = new TestSubscriber<>();
-//        models.subscribe(subscriber);
-//
-//        // Running
-//        app.run();
-//        assertThat(app.isRunning());
-//
-//        // Should be enough
-//        Thread.sleep(250);
-//
-//        // Models received Actions
-//        verify(model).actUpon(action);
-//        verify(model2).actUpon(action2);
-//        verify(model3).actUpon(action3);
-//
-//        // Actors received all Models
-//        subscriber.assertReceivedOnNext(Arrays.asList(model, model2, model3));
-//
-//        // App finished
-//        assertThat(app.isRunning()).isFalse();
-//    }
-//
-//    @Test
-//    public void testRepeatedActorsAreIgnored() throws Exception {
-//        when(model.actUpon(action)).thenReturn(model2);
-//
-//        when(actor.getActions()).thenReturn(Observable.just(action)
-//                                                      .delay(5, TimeUnit.MILLISECONDS));
-//
-//        ArgumentCaptor<Observable<Model>> modelsCaptor = ArgumentCaptor.forClass(Observable
-// .class);
-//
-//        MockHollywoodApplication
-//                app =
-//                new MockHollywoodApplication(model, Arrays.asList(actor, actor), null);
-//
-//        // One subscription, not two
-//        verify(actor).subscribeTo(modelsCaptor.capture());
-//        TestSubscriber<Model> subscriber = new TestSubscriber<>();
-//        modelsCaptor.getValue().subscribe(subscriber);
-//
-//        // Running
-//        app.run();
-//
-//        Thread.sleep(10);
-//
-//        // No call on model2 because action was received just once
-//        subscriber.assertReceivedOnNext(Arrays.asList(model, model2));
-//        verify(model2, never()).actUpon(action);
-//
-//        assertThat(app.isRunning()).isTrue();
-//    }
-//
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testBasicCycle() throws Exception {
+        ArgumentCaptor<Observable<Model>> modelsCaptor = ArgumentCaptor.forClass(Observable
+                                                                                         .class);
+        TestObserver<Model> modelsObserver = new TestObserver<>();
+
+        final PublishSubject<Action> actions2 = PublishSubject.create();
+
+        Observable<Action>
+                actions1 =
+                Observable.just(action, action2)
+                          // Make action3 go last
+                          .doOnComplete(() -> {
+                              actions2.onNext(action3);
+                              actions2.onComplete();
+                          });
+
+        // Models act upon Actions
+        when(model.actUpon(action)).thenReturn(model2);
+        when(model2.actUpon(action2)).thenReturn(model3);
+
+        // Actions come from Actors
+        when(actor.getActions()).thenReturn(actions1);
+        when(actor2.getActions()).thenReturn(actions2);
+
+        HollywoodApplication
+                app =
+                new HollywoodApplication(model, Arrays.asList(actor, actor2), null);
+
+        // Actors receive Models
+        verify(actor).subscribeTo(modelsCaptor.capture());
+        Observable<Model> models = modelsCaptor.getValue();
+        verify(actor2).subscribeTo(models);
+
+        models.subscribe(modelsObserver);
+
+        app.run()
+           .test()
+           .awaitDone(TIMEOUT_FOR_EXECUTION_TO_FINISH, TimeUnit.MILLISECONDS)
+           .assertNoValues()
+           .assertComplete();
+
+        // Models received Actions
+        verify(model).actUpon(action);
+        verify(model2).actUpon(action2);
+        verify(model3).actUpon(action3);
+
+        // Actors received all Models
+        modelsObserver.assertValues(model, model2, model3);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testRepeatedActorsAreIgnored() throws Exception {
+        when(model.actUpon(action)).thenReturn(model2);
+        when(actor.getActions()).thenReturn(Observable.just(action));
+
+        ArgumentCaptor<Observable<Model>> modelsCaptor = ArgumentCaptor.forClass(Observable
+                                                                                         .class);
+        new HollywoodApplication(model, Arrays.asList(actor, actor), null)
+                .run()
+                .test()
+                .awaitDone(TIMEOUT_FOR_EXECUTION_TO_FINISH, TimeUnit.MILLISECONDS)
+                .assertNoValues()
+                .assertNotTerminated()
+                .dispose();
+
+        // One subscription, not two
+        verify(actor).subscribeTo(modelsCaptor.capture());
+        verify(model).actUpon(action);
+        // No call on model2 because action was received just once
+        verify(model2, never()).actUpon(action);
+    }
+
     @Test
     public void testActionsAreDeliveredInSameThread() throws Exception {
         final Thread[] threads = new Thread[2];
