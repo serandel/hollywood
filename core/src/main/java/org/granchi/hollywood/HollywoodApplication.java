@@ -81,13 +81,13 @@ public class HollywoodApplication {
      * Creates a new Thread that executes action->model->actor cycles in a loop until Model becomes
      * null.
      *
-     * @return observable with all the possible exceptions that can arise during the loop, it will
-     * complete when the loop finishes, if ever
+     * @return observable with all the possible exceptions that can arise during the execution, it
+     * will complete when the execution finishes, if ever
      *
      * @throws IllegalStateException if the application is already running or was running in the
      *                               past
      */
-    public synchronized Observable<Exception> run() {
+    public synchronized Observable<RuntimeException> run() {
         if (executor != null) {
             throw new IllegalStateException(
                     "Application is already running or stopped after running");
@@ -95,7 +95,7 @@ public class HollywoodApplication {
 
         // Every cycle goes in the same thread
         executor = Executors.newSingleThreadExecutor();
-        Subject<Exception> exceptions = PublishSubject.create();
+        Subject<RuntimeException> execution = PublishSubject.create();
 
         executor.execute(() -> {
             actions.subscribeOn(Schedulers.from(executor))
@@ -106,14 +106,15 @@ public class HollywoodApplication {
                                    try {
                                        log.debug("Received action: {}", action);
                                        model = model.actUpon(action);
-                                   } catch (Exception e) {
+                                   } catch (RuntimeException e) {
                                        if (exceptionHandler == null) {
                                            model = null;
 
                                            String msg = "Exception during model.actUpon";
                                            log.error(msg, e);
 
-                                           exceptions.onNext(new RuntimeException(msg, e));
+                                           // No need to encapsulate the exception
+                                           execution.onNext(e);
                                        } else {
                                            String
                                                    msg =
@@ -132,7 +133,7 @@ public class HollywoodApplication {
 
                                        // We're done!
                                        models.onComplete();
-                                       exceptions.onComplete();
+                                       execution.onComplete();
 
                                        dispose();
                                    } else {
@@ -146,8 +147,8 @@ public class HollywoodApplication {
 
                                    log.error(msg, throwable);
 
-                                   exceptions.onNext(new RuntimeException(msg, throwable));
-                                   exceptions.onComplete();
+                                   execution.onNext(new RuntimeException(msg, throwable));
+                                   execution.onComplete();
                                }
 
                                @Override
@@ -161,6 +162,8 @@ public class HollywoodApplication {
             models.onNext(model);
         });
 
-        return exceptions;
+        log.debug("Application running!");
+
+        return execution;
     }
 }

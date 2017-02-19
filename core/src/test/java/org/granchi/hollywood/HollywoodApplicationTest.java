@@ -7,24 +7,29 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.concurrent.TimeUnit;
 
 import io.reactivex.Observable;
+import io.reactivex.observers.TestObserver;
 
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class HollywoodApplicationTest {
+    // Milliseconds to wait for the loop to finish
+    public static final int TIMEOUT_FOR_EXECUTION_TO_FINISH = 200;
+
     @Mock
-    private Model model;
+    private Model model, model2;
     // , model2, model3;
 //
     @Mock
     private Actor actor, actor2;
 
     @Mock
-    private Action action;
-    // , action2, action3;
-//
+    private Action action, action2, action3;
+
     @Mock
     private ModelExceptionHandler exceptionHandler;
 
@@ -49,15 +54,12 @@ public class HollywoodApplicationTest {
         // to it and the app exists inmediately
         when(actor.getActions()).thenReturn(Observable.never());
 
-        Observable<Exception>
-                execution =
-                new HollywoodApplication(model, Arrays.asList(actor), null).run();
-
-        Thread.sleep(10);
-
-        execution.test()
-                 .assertNoValues()
-                 .assertNotTerminated();
+        new HollywoodApplication(model, Arrays.asList(actor), null)
+                .run()
+                .test()
+                .awaitDone(TIMEOUT_FOR_EXECUTION_TO_FINISH, TimeUnit.MILLISECONDS)
+                .assertNoValues()
+                .assertNotTerminated();
     }
 
     @Test(expected = IllegalStateException.class)
@@ -77,37 +79,31 @@ public class HollywoodApplicationTest {
         when(actor.getActions()).thenReturn(Observable.just(action));
         when(model.actUpon(action)).thenReturn(null);
 
-
-        Observable<Exception>
-                execution =
-                new HollywoodApplication(model, Arrays.asList(actor), null).run();
-
-        Thread.sleep(20);
-
-        execution.test()
-                 .assertNoValues()
-                 .assertComplete();
+        new HollywoodApplication(model, Arrays.asList(actor), null)
+                .run()
+                .test()
+                .awaitDone(TIMEOUT_FOR_EXECUTION_TO_FINISH, TimeUnit.MILLISECONDS)
+                .assertNoValues()
+                .assertComplete();
     }
 
-    @Test
-    public void testAppCanBeRelaunched() throws Exception {
-        when(actor.getActions()).thenReturn(Observable.never());
+    @Test(expected = IllegalStateException.class)
+    public void testAppCantBeRelaunched() throws Exception {
+        when(actor.getActions()).thenReturn(Observable.just(action));
+        when(model.actUpon(action)).thenReturn(null);
 
         HollywoodApplication app =
                 new HollywoodApplication(model, Arrays.asList(actor), null);
         app.run()
-           .subscribe((exception) -> {
-                          // Nothing
-                      },
-                      (throwable) -> {
-                          // Nothing
-                      },
-                      app::run);
+           .test()
+           .awaitDone(TIMEOUT_FOR_EXECUTION_TO_FINISH, TimeUnit.MILLISECONDS)
+           .assertNoValues()
+           .assertComplete();
 
-        Thread.sleep(10);
+        app.run();
     }
 
-//    @Test(timeout = 1000)
+    //    @Test(timeout = 1000)
 //    @SuppressWarnings("unchecked")
 //    public void testBasicCycle() throws Exception {
 //        ArgumentCaptor<Observable<Model>> modelsCaptor = ArgumentCaptor.forClass(Observable
@@ -225,61 +221,56 @@ public class HollywoodApplicationTest {
 //        assertThat(threads[0]).isEqualTo(threads[1]);
 //    }
 //
-//    @Test
-//    public void testExceptionInModelWithoutHandlerEndsApp() throws Exception {
-//        // One action, one second waiting and then more actions
-//        when(actor.getActions()).thenReturn(Observable.just(action).mergeWith(
-//                Observable.just(action2, action3).delay(1000, TimeUnit.MILLISECONDS)));
-//        when(model.actUpon(action)).thenThrow(new RuntimeException());
-//
-//        MockHollywoodApplication
-//                app =
-//                new MockHollywoodApplication(model, Arrays.asList(actor), null);
-//        app.run();
-//
-//        Thread.sleep(100);
-//        assertThat(app.isRunning()).isFalse();
-//    }
-//
-//    @Test
-//    public void testModelExceptionHandlerReturningNullEndsApp() throws Exception {
-//        Exception ex = new RuntimeException();
-//
-//        // One action, one second waiting and then more actions
-//        when(actor.getActions()).thenReturn(Observable.just(action).mergeWith(
-//                Observable.just(action2, action3).delay(1000, TimeUnit.MILLISECONDS)));
-//        when(model.actUpon(action)).thenThrow(ex);
-//
-//        when(exceptionHandler.onException(model, action, ex)).thenReturn(null);
-//
-//        MockHollywoodApplication
-//                app =
-//                new MockHollywoodApplication(model, Arrays.asList(actor), exceptionHandler);
-//        app.run();
-//
-//        Thread.sleep(100);
-//        assertThat(app.isRunning()).isFalse();
-//    }
-//
-//    @Test
-//    public void testModelExceptionHandlerCanRecover() throws Exception {
-//        Exception ex = new RuntimeException();
-//
-//        when(actor.getActions()).thenReturn(Observable.just(action, action2));
-//        when(model.actUpon(action)).thenThrow(ex);
-//
-//        when(exceptionHandler.onException(model, action, ex)).thenReturn(model2);
-//
-//        MockHollywoodApplication
-//                app =
-//                new MockHollywoodApplication(model, Arrays.asList(actor), exceptionHandler);
-//        app.run();
-//
-//        Thread.sleep(100);
-//
-//        verify(exceptionHandler).onException(model, action, ex);
-//        verify(model).actUpon(action);
-//        verify(model2).actUpon(action2);
-//        assertThat(app.isRunning()).isFalse();
-//    }
+    @Test
+    public void testExceptionInModelWithoutHandlerEndsApp() throws Exception {
+        RuntimeException ex = new RuntimeException();
+
+        when(actor.getActions()).thenReturn(Observable.fromArray(action, action2));
+        when(model.actUpon(action)).thenThrow(ex);
+
+        TestObserver<RuntimeException>
+                testObserver =
+                new HollywoodApplication(model, Arrays.asList(actor), null).run()
+                                                                           .test();
+        Thread.sleep(TIMEOUT_FOR_EXECUTION_TO_FINISH);
+
+        testObserver.assertResult(ex);
+    }
+
+    @Test
+    public void testModelExceptionHandlerReturningNullEndsApp() throws Exception {
+        Exception ex = new RuntimeException();
+
+        when(actor.getActions()).thenReturn(Observable.just(action, action2));
+        when(model.actUpon(action)).thenThrow(ex);
+
+        when(exceptionHandler.onException(model, action, ex)).thenReturn(null);
+
+        new HollywoodApplication(model, Arrays.asList(actor), exceptionHandler)
+                .run()
+                .test()
+                .awaitDone(TIMEOUT_FOR_EXECUTION_TO_FINISH, TimeUnit.MILLISECONDS)
+                .assertComplete();
+    }
+
+    @Test
+    public void testModelExceptionHandlerCanRecover() throws Exception {
+        Exception ex = new RuntimeException();
+
+        when(actor.getActions()).thenReturn(Observable.just(action, action2));
+        when(model.actUpon(action)).thenThrow(ex);
+
+        when(exceptionHandler.onException(model, action, ex)).thenReturn(model2);
+
+        new HollywoodApplication(model, Arrays.asList(actor), exceptionHandler)
+                .run()
+                .test()
+                .awaitDone(TIMEOUT_FOR_EXECUTION_TO_FINISH, TimeUnit.MILLISECONDS)
+                .assertNoValues()
+                .assertComplete();
+
+        verify(exceptionHandler).onException(model, action, ex);
+        verify(model).actUpon(action);
+        verify(model2).actUpon(action2);
+    }
 }
