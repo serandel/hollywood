@@ -33,10 +33,10 @@ public abstract class Model {
      *
      * @param type desired class
      * @param <T>  type of the desired class
-     * @return model of submodel of that class
+     * @return collection of submodels of that class
      */
     @SuppressWarnings("unchecked")
-    public <T extends Model> Collection<T> getSubmodelOfType(Class<T> type) {
+    public <T extends Model> Collection<T> getSubmodelsOfType(Class<T> type) {
         if (type.isAssignableFrom(this.getClass())) {
             return Collections.singletonList((T) this);
         } else {

@@ -26,7 +26,7 @@ public class SharedPreferencesActor implements Actor {
     public void subscribeTo(Observable<Model> models) {
         // No need for observeOn, because we only emit actions back, and those are already
         // serialized in the model thread
-        models.flatMapIterable(m -> m.getSubmodelOfType(PreferencesModel.class))
+        models.flatMapIterable(m -> m.getSubmodelsOfType(PreferencesModel.class))
               .subscribeOn(Schedulers.io())
               .subscribe(model -> {
                   actions.onNext(new Action() {
