@@ -5,9 +5,9 @@ import android.app.Application;
 import org.granchi.hollywood.Actor;
 import org.granchi.hollywood.CompositeModel;
 import org.granchi.hollywood.HollywoodApplication;
-import org.granchi.hollywood.LogAndReinstateModelExceptionHandler;
 import org.granchi.hollywood.Model;
 import org.granchi.hollywood.ModelExceptionHandler;
+import org.granchi.hollywood.ReinstateModelExceptionHandler;
 import org.granchi.whatnow.StubActor;
 import org.granchi.whatnow.TasksModel;
 import org.granchi.whatnow.WhatNowApplication;
@@ -86,6 +86,6 @@ public class WhatNowModule {
 
     @Provides
     ModelExceptionHandler provideModelExceptionHandler() {
-        return new LogAndReinstateModelExceptionHandler(null);
+        return new ReinstateModelExceptionHandler();
     }
 }
