@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit;
 import io.reactivex.Observable;
 import io.reactivex.observers.TestObserver;
 import io.reactivex.schedulers.Schedulers;
-import io.reactivex.subjects.PublishSubject;
+import io.reactivex.subjects.BehaviorSubject;
 
 import static com.google.common.truth.Truth.assertThat;
 import static org.mockito.Mockito.never;
@@ -113,25 +113,13 @@ public class HollywoodApplicationTest {
     public void testBasicCycle() throws Exception {
         ArgumentCaptor<Observable<Model>> modelsCaptor = ArgumentCaptor.forClass(Observable
                                                                                          .class);
-        TestObserver<Model> modelsObserver = new TestObserver<>();
-
-        final PublishSubject<Action> actions2 = PublishSubject.create();
-
-        Observable<Action>
-                actions1 =
-                Observable.just(action, action2)
-                          // Make action3 go last
-                          .doOnComplete(() -> {
-                              actions2.onNext(action3);
-                              actions2.onComplete();
-                          });
-
+        final BehaviorSubject<Action> actions = BehaviorSubject.create();
+        final BehaviorSubject<Action> actions2 = BehaviorSubject.create();
         // Models act upon Actions
         when(model.actUpon(action)).thenReturn(model2);
         when(model2.actUpon(action2)).thenReturn(model3);
 
-        // Actions come from Actors
-        when(actor.getActions()).thenReturn(actions1);
+        when(actor.getActions()).thenReturn(actions);
         when(actor2.getActions()).thenReturn(actions2);
 
         HollywoodApplication
@@ -142,6 +130,25 @@ public class HollywoodApplicationTest {
         verify(actor).subscribeTo(modelsCaptor.capture());
         Observable<Model> models = modelsCaptor.getValue();
         verify(actor2).subscribeTo(models);
+
+        TestObserver<Model> modelsObserver = new TestObserver<Model>() {
+            @Override
+            public void onNext(Model m) {
+                // The sequence is:
+                // Action from Actor
+                // Action2 from Actor2
+                // Action3 from Actor, again
+                if (m == model) {
+                    actions.onNext(action);
+                } else if (m == model2) {
+                    actions2.onNext(action2);
+                } else if (m == model3) {
+                    actions.onNext(action3);
+                }
+
+                super.onNext(m);
+            }
+        };
 
         models.subscribe(modelsObserver);
 
