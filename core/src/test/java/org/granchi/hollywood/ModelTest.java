@@ -36,21 +36,21 @@ public class ModelTest {
         assertThat(model.getSubmodelsOfType(OtherParentModel.class)).isEmpty();
     }
 
-    private class ParentModel extends Model {
+    private static class ParentModel extends Model {
         @Override
         protected Model actUpon(Action action) {
             return null;
         }
     }
 
-    private class ChildModel extends ParentModel {
+    private static class ChildModel extends ParentModel {
         @Override
         protected Model actUpon(Action action) {
             return null;
         }
     }
 
-    public class OtherParentModel extends Model {
+    public static class OtherParentModel extends Model {
         @Override
         protected Model actUpon(Action action) {
             return null;
