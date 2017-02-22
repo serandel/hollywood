@@ -1,10 +1,10 @@
 package org.granchi.hollywood;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.LinkedHashSet;
+import java.util.List;
 
 /**
  * A Model that only contains several subModels.
@@ -14,65 +14,58 @@ import java.util.Set;
  * @author serandel
  */
 public class CompositeModel extends Model {
-    private Set<Model> models;
-
-
-    /**
-     * Constructor.
-     * <p>
-     * Initializes the Model with at least one subModel.
-     * <p>
-     * It's just a gentler syntax for the other constructor.
-     *
-     * @param initialModels initial models, the order is irrelevant
-     */
-    public CompositeModel(Model... initialModels) {
-        this(Arrays.asList(initialModels));
-    }
+    private List<Model> models = new ArrayList<>();
 
     /**
      * Constructor.
      * <p>
      * Initializes the Model with at least one subModel.
+     * <p>
+     * The order can be important, because actions will be applied to every subModel following the
+     * same order.
      *
      * @param initialModels initial models
      */
-    public CompositeModel(Collection<Model> initialModels) {
+    public CompositeModel(Model... initialModels) {
         if (initialModels == null) {
             throw new NullPointerException();
         }
-        if (initialModels.size() == 0) {
+        if (initialModels.length == 0) {
             throw new IllegalArgumentException();
         }
 
         for (Model model : initialModels) {
             if (model == null) {
                 throw new NullPointerException();
+            } else if (!models.contains(model)) {
+                models.add(model);
             }
         }
-
-        models = new HashSet<>(initialModels);
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public Model actUpon(Action action) {
         // It's easier for the submodels if they don't have to worry about duplicates
-        Set<Model> resultModels = new HashSet<>();
+        LinkedHashSet<Model> resultModels = new LinkedHashSet<>();
 
         for (Model model : models) {
             Model resultModel = model.actUpon(action);
 
             if (resultModel != null) {
                 if (resultModel instanceof CompositeModel) {
-                    resultModels.addAll(((CompositeModel) resultModel).getModels());
-                } else {
+                    ((CompositeModel) resultModel).getModels()
+                                                  .stream()
+                                                  .filter(m -> !resultModels.contains(m))
+                                                  .forEach(resultModels::add);
+                } else if (!resultModels.contains(model)) {
                     resultModels.add(resultModel);
                 }
             }
         }
 
-        return resultModels.isEmpty() ? null : new CompositeModel(resultModels);
+        return resultModels.isEmpty() ? null :
+                new CompositeModel(resultModels.toArray(new Model[resultModels.size()]));
     }
 
     /**
@@ -86,7 +79,22 @@ public class CompositeModel extends Model {
         return Collections.unmodifiableCollection(models);
     }
 
-    // TODO getSubmodelsOfType?
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T extends Model> Collection<T> getSubmodelsOfType(Class<T> type) {
+        if (type.isAssignableFrom(this.getClass())) {
+            return Collections.singletonList((T) this);
+        } else {
+            ArrayList<T> resultSubModels = new ArrayList<>();
+
+            models.stream()
+                  .flatMap(model -> model.getSubmodelsOfType(type).stream())
+                  .filter(model -> !resultSubModels.contains(model))
+                  .forEach(resultSubModels::add);
+
+            return resultSubModels;
+        }
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -99,11 +107,11 @@ public class CompositeModel extends Model {
 
         CompositeModel that = (CompositeModel) o;
 
-        return models != null ? models.equals(that.models) : that.models == null;
+        return models.equals(that.models);
     }
 
     @Override
     public int hashCode() {
-        return models != null ? models.hashCode() : 0;
+        return models.hashCode();
     }
 }

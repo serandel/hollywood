@@ -6,16 +6,15 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
+import java.util.Collections;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class CompositeModelTest {
-
     @Mock
     private Action action;
 
@@ -23,40 +22,25 @@ public class CompositeModelTest {
     private Model model1, model2, model3, model4, model5;
 
     @Test(expected = NullPointerException.class)
-    public void testCantHaveNullSubModelsCollection() {
-        new CompositeModel((Collection<Model>) null);
-    }
-
-    @Test(expected = NullPointerException.class)
-    public void testCantHaveNullSubModelsVarargs() {
+    public void testCantHaveNullSubModelsArray() {
         new CompositeModel((Model[]) null);
     }
 
     @Test(expected = NullPointerException.class)
-    public void testCantHaveNullSubModelsInCollection() {
-        new CompositeModel(Arrays.asList(model1, null));
-    }
-
-    @Test(expected = NullPointerException.class)
-    public void testCantHaveNullSubModelsInVarargs() {
+    public void testCantHaveNullSubModels() {
         new CompositeModel(model1, null);
     }
 
     @Test
-    public void testBothConstructorsAreEquivalent() {
-        assertThat(new CompositeModel(model1, model2, model3)).isEqualTo(
-                new CompositeModel(Arrays.asList(
-                        model1,
-                        model2,
-                        model3)));
+    public void testOrderDoesMatterInConstructor() {
+        assertThat(new CompositeModel(model1, model2, model3))
+                .isNotEqualTo(new CompositeModel(model2, model3, model1));
     }
 
     @Test
-    public void testOrderDoesNotMatterInConstructor() {
-        assertThat(new CompositeModel(model1, model2, model3)).isEqualTo(new CompositeModel(
-                model2,
-                model3,
-                model1));
+    public void testRespectEquals() {
+        assertThat(new CompositeModel(model1, model2, model3))
+                .isEqualTo(new CompositeModel(model1, model2, model3));
     }
 
     @Test
@@ -72,50 +56,36 @@ public class CompositeModelTest {
         verify(model2).actUpon(action);
     }
 
-//    @Test
-//    public void testPropagatesActionsStoresResultsAndGroupsActors() {
-//        when(model1.actUpon(action)).thenReturn(model3);
-//        when(model2.actUpon(action)).thenReturn(model4);
-//
-//        when(model1.getActors()).thenReturn(Arrays.asList(metadata1, metadata3));
-//        when(model2.getActors()).thenReturn(Arrays.asList(metadata1, metadata2));
-//
-//        when(model3.actUpon(action)).thenReturn(model5);
-//        when(model4.actUpon(action)).thenReturn(model5);
-//
-//        CompositeModel compositeModel = new CompositeModel(model1, model2);
-//        Model compositeModel2 = compositeModel.actUpon(action);
-//        Model compositeModel3 = compositeModel2.actUpon(action);
-//        compositeModel3.actUpon(action);
-//
-//        assertThat(compositeModel.getActors().size()).isEqualTo(3);
-//        assertThat(compositeModel.getActors()).contains(metadata1);
-//        assertThat(compositeModel.getActors()).contains(metadata2);
-//        assertThat(compositeModel.getActors()).contains(metadata3);
-//
-//        verify(model1).actUpon(action);
-//        verify(model2).actUpon(action);
-//
-//        assertThat(compositeModel2).isInstanceOf(CompositeModel.class);
-//
-//        verify(model3).actUpon(action);
-//        verify(model4).actUpon(action);
-//        assertThat(compositeModel3).isInstanceOf(CompositeModel.class);
-//
-//        // Only once
-//        verify(model5).actUpon(action);
-//    }
+    @Test
+    public void testPropagatesActionsStoresResults() {
+        when(model1.actUpon(action)).thenReturn(model3);
+        when(model2.actUpon(action)).thenReturn(model4);
 
-    // TODO if it's empty replace itself with null
+        when(model3.actUpon(action)).thenReturn(model5);
+        when(model4.actUpon(action)).thenReturn(model5);
+
+        CompositeModel compositeModel = new CompositeModel(model1, model2);
+        Model compositeModel2 = compositeModel.actUpon(action);
+        Model compositeModel3 = compositeModel2.actUpon(action);
+        compositeModel3.actUpon(action);
+
+        verify(model1).actUpon(action);
+        verify(model2).actUpon(action);
+
+        assertThat(compositeModel2).isInstanceOf(CompositeModel.class);
+
+        verify(model3).actUpon(action);
+        verify(model4).actUpon(action);
+        assertThat(compositeModel3).isInstanceOf(CompositeModel.class);
+
+        // Only once
+        verify(model5).actUpon(action);
+    }
 
     @Test
     public void testCompositeResultModelsAreAggregatedSoNoDuplications() {
-        when(model1.actUpon(action)).thenReturn(new CompositeModel(new HashSet<>(Arrays.asList(
-                model3,
-                model4))));
-        when(model2.actUpon(action)).thenReturn(new CompositeModel(new HashSet<>(Arrays.asList(
-                model3,
-                model5))));
+        when(model1.actUpon(action)).thenReturn(new CompositeModel(model3, model4));
+        when(model2.actUpon(action)).thenReturn(new CompositeModel(model3, model5));
 
         new CompositeModel(model1, model2).actUpon(action).actUpon(action);
 
@@ -125,21 +95,71 @@ public class CompositeModelTest {
     }
 
     @Test
+    public void testOrderOfTheResultsDependsOnOrderOfTheSubmodels() {
+        when(model1.actUpon(action)).thenReturn(new CompositeModel(model3, model4));
+        when(model2.actUpon(action)).thenReturn(new CompositeModel(model3, model5));
+
+        Model resultModel = new CompositeModel(model1, model2).actUpon(action);
+
+        assertThat(resultModel).isInstanceOf(CompositeModel.class);
+
+        assertThat(((CompositeModel) resultModel).getModels())
+                .containsExactly(model3, model4, model5)
+                .inOrder();
+    }
+
+    @Test
     public void testNoSubModelsReturnNull() {
         Model resultModel = new CompositeModel(model1, model2).actUpon(action);
 
         assertThat(resultModel).isNull();
     }
 
-    @Test(expected = UnsupportedOperationException.class)
-    public void testGetModelsCantAddMore() {
-        new CompositeModel(model1).getModels().add(model2);
+    @Test
+    public void testNoSubModelsOfType() {
+        when(model1.getSubmodelsOfType(SubModel.class)).thenReturn(Collections.emptyList());
+        when(model2.getSubmodelsOfType(SubModel.class)).thenReturn(Collections.emptyList());
+
+        assertThat(new CompositeModel(model1, model2)
+                           .getSubmodelsOfType(SubModel.class)).isEmpty();
     }
 
-    @Test(expected = UnsupportedOperationException.class)
-    public void testGetModelsCantRemove() {
-        new CompositeModel(model1).getModels().remove(model1);
+    @Test
+    public void testIsSubModelOfItsType() {
+        CompositeModel compositeModel = new CompositeModel(model1);
+        assertThat(compositeModel.getSubmodelsOfType(CompositeModel.class))
+                .containsExactly(compositeModel);
     }
 
-    // TODO incompatible actorMetadata? single instance, same class different properties
+    @Test
+    public void testIsSubModelOfAParentType() {
+        SubCompositeModel compositeModel = new SubCompositeModel(model1);
+        assertThat(compositeModel.getSubmodelsOfType(CompositeModel.class)).containsExactly(
+                compositeModel);
+    }
+
+    @Test
+    public void testGetsSubModelsOfType() {
+        SubModel subModel1 = mock(SubModel.class);
+        SubModel subModel2 = mock(SubModel.class);
+        SubModel subModel3 = mock(SubModel.class);
+
+        when(model1.getSubmodelsOfType(SubModel.class)).thenReturn(Arrays.asList(subModel1,
+                                                                                 subModel2));
+        when(model2.getSubmodelsOfType(SubModel.class)).thenReturn(Arrays.asList(subModel3,
+                                                                                 subModel2));
+
+        assertThat(new CompositeModel(model1, model2).getSubmodelsOfType(SubModel.class))
+                .containsExactly(subModel1, subModel2, subModel3)
+                .inOrder();
+    }
+
+    private static abstract class SubModel extends Model {
+    }
+
+    private static class SubCompositeModel extends CompositeModel {
+        SubCompositeModel(Model... initialModels) {
+            super(initialModels);
+        }
+    }
 }

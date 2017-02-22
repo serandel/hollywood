@@ -11,7 +11,8 @@ import java.util.Collections;
  * <li>Should be immutable, so there are no lateral effects from it being passed from actor to
  * actor</li>
  * <li>Is called from a single thread, so it will never receive two actions concurrently</li>
- * <li>Is ok to return itself from an action, if no change is needed</li>
+ * <li>It's ok to return itself from an action, if no change is needed</li>
+ * <li>It's advisable to implement equals and hashCode</li>
  * </ul>
  *
  * @author serandel
