@@ -1,21 +1,8 @@
-buildscript {
-    repositories {
-        jcenter()
-    }
-    dependencies {
-        classpath 'com.android.tools.build:gradle:2.3.0-rc1'
-        classpath 'com.github.dcendents:android-maven-gradle-plugin:1.4.1'
-        classpath 'me.tatarka:gradle-retrolambda:3.3.1'
-    }
-}
-
 apply plugin: 'com.android.library'
-apply plugin: 'com.github.dcendents.android-maven'
-apply plugin: 'me.tatarka.retrolambda'
+apply plugin: 'kotlin-android'
 
 version = '1.0-SNAPSHOT'
 description = "Android extension for Hollywood"
-group='com.github.serandel'
 
 android {
     compileSdkVersion 25
@@ -36,6 +23,8 @@ android {
 dependencies {
     compile project(':core')
 
+    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+
     compile 'com.github.tony19:logback-android-core:1.1.1-6'
     compile('com.github.tony19:logback-android-classic:1.1.1-6') {
         // workaround issue #73
@@ -48,14 +37,4 @@ dependencies {
     testCompile 'junit:junit:4.12'
     testCompile 'org.mockito:mockito-core:2.6.8'
     testCompile 'com.google.truth:truth:0.31'
-
-    retrolambdaConfig 'net.orfjackal.retrolambda:retrolambda:2.5.0'
-}
-
-retrolambda {
-    jdk System.getenv("JAVA_HOME")
-    oldJdk System.getenv("JAVA7_HOME")
-    javaVersion JavaVersion.VERSION_1_7
-    defaultMethods false
-    incremental true
 }

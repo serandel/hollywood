@@ -1,20 +1,11 @@
-buildscript {
-    repositories {
-        mavenCentral()
-    }
-
-    dependencies {
-        classpath 'me.tatarka:gradle-retrolambda:3.3.1'
-    }
-}
 apply plugin: 'java'
-apply plugin: 'me.tatarka.retrolambda'
-
-sourceCompatibility = JavaVersion.VERSION_1_8
+apply plugin: 'kotlin'
 
 description = "An opinionated, Android-aware, Java functional reactive framework inspired by Cycle.js"
 
 dependencies {
+    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+
     compile 'io.reactivex.rxjava2:rxjava:2.0.4'
     compile 'org.slf4j:slf4j-api:1.7.21'
 
@@ -23,14 +14,4 @@ dependencies {
     testCompile 'com.google.truth:truth:0.31'
     // Just to see logs in console during unit tests
     testCompile 'ch.qos.logback:logback-classic:1.2.1'
-
-    retrolambdaConfig 'net.orfjackal.retrolambda:retrolambda:2.5.0'
-}
-
-retrolambda {
-    jdk System.getenv("JAVA_HOME")
-    oldJdk System.getenv("JAVA7_HOME")
-    javaVersion JavaVersion.VERSION_1_7
-    defaultMethods false
-    incremental true
 }
