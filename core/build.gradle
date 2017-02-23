@@ -3,6 +3,10 @@ apply plugin: 'kotlin'
 
 description = "An opinionated, Android-aware, Java functional reactive framework inspired by Cycle.js"
 
+sourceSets {
+    main.java.srcDirs += 'src/main/kotlin'
+}
+
 dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 

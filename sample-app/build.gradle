@@ -18,13 +18,6 @@ android {
         targetSdkVersion 25
         versionCode 1
         versionName "1.0"
-        jackOptions {
-            enabled true
-        }
-    }
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
     }
     buildTypes {
         release {
@@ -36,8 +29,12 @@ android {
     }
 }
 
+sourceSets {
+    main.java.srcDirs += 'src/main/kotlin'
+}
+
 dependencies {
-    compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlin_version"
+    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 
     annotationProcessor 'com.google.dagger:dagger-compiler:2.6'
 
