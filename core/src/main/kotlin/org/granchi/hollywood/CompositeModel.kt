@@ -10,7 +10,7 @@ import kotlin.reflect.KClass
  *
  * It serves as a way to decompose business logic in several components.
  */
-class CompositeModel(private var models: List<Model>) : Model() {
+data class CompositeModel(var models: List<Model>) : Model() {
     constructor(vararg model: Model) : this(listOf(* model))
 
     init {
