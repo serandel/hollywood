@@ -26,16 +26,19 @@ dependencies {
 
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 
-    compile 'com.github.tony19:logback-android-core:1.1.1-6'
-    compile('com.github.tony19:logback-android-classic:1.1.1-6') {
+    compile "com.github.tony19:logback-android-core:$logback_android_version"
+    compile("com.github.tony19:logback-android-classic:$logback_android_version") {
         // workaround issue #73
         exclude group: 'com.google.android', module: 'android'
     }
 
-    compile 'io.reactivex.rxjava2:rxandroid:2.0.1'
-    compile 'io.reactivex.rxjava2:rxjava:2.0.4'
+    compile "io.reactivex.rxjava2:rxandroid:$rxandroid_version"
+    compile "io.reactivex.rxjava2:rxjava:$rxjava_version"
 
-    testCompile 'junit:junit:4.12'
-    testCompile 'org.mockito:mockito-core:2.6.8'
-    testCompile 'com.google.truth:truth:0.31'
+    testCompile "junit:junit:$junit_version"
+    testCompile "org.mockito:mockito-core:$mockito_version"
+    testCompile "com.nhaarman:mockito-kotlin:$mockito_kotlin_version"
+    testCompile "com.google.truth:truth:$truth_version"
+    // Just to see logs in console during unit tests
+    testCompile "ch.qos.logback:logback-classic:$logback_version"
 }

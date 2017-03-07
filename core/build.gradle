@@ -12,13 +12,13 @@ dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
 
-    compile 'io.reactivex.rxjava2:rxjava:2.0.7'
-    compile 'org.slf4j:slf4j-api:1.7.21'
+    compile "io.reactivex.rxjava2:rxjava:$rxjava_version"
+    compile "org.slf4j:slf4j-api:$slf4j_version"
 
-    testCompile 'junit:junit:4.12'
-    testCompile 'org.mockito:mockito-core:2.6.8'
-    testCompile "com.nhaarman:mockito-kotlin:1.3.0"
-    testCompile 'com.google.truth:truth:0.31'
+    testCompile "junit:junit:$junit_version"
+    testCompile "org.mockito:mockito-core:$mockito_version"
+    testCompile "com.nhaarman:mockito-kotlin:$mockito_kotlin_version"
+    testCompile "com.google.truth:truth:$truth_version"
     // Just to see logs in console during unit tests
-    testCompile 'ch.qos.logback:logback-classic:1.2.1'
+    testCompile "ch.qos.logback:logback-classic:$logback_version"
 }
