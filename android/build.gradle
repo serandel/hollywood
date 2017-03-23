@@ -1,7 +1,6 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 
-version = '1.0-SNAPSHOT'
 description = "Android extension for Hollywood"
 
 android {
