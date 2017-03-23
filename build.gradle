@@ -1,5 +1,5 @@
 buildscript {
-    ext.kotlin_version = '1.1.0'
+    ext.kotlin_version = '1.1.1'
 
     ext.rxjava_version = '2.0.7'
     ext.rxandroid_version = '2.0.1'
@@ -19,9 +19,7 @@ buildscript {
 
     repositories {
         jcenter()
-        maven {
-            url 'http://dl.bintray.com/kotlin/kotlin-eap-1.1'
-        }
+        mavenCentral()
     }
 
     dependencies {
@@ -32,10 +30,12 @@ buildscript {
         // in the individual module build.gradle files
     }
 }
+
 allprojects {
     version = '1.0-SNAPSHOT'
 
     repositories {
         jcenter()
+        mavenCentral()
     }
 }
