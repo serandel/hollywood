@@ -53,6 +53,12 @@ dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     compile project(':android')
 
+    compile "com.github.tony19:logback-android-core:$logback_android_version"
+    compile("com.github.tony19:logback-android-classic:$logback_android_version") {
+        // workaround issue #73
+        exclude group: 'com.google.android', module: 'android'
+    }
+
     compile "com.android.support:appcompat-v7:$support_libraries_version"
     compile "com.android.support:design:$support_libraries_version"
 
