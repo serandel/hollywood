@@ -12,6 +12,7 @@ import org.granchi.whatnow.StubActor;
 import org.granchi.whatnow.TasksModel;
 import org.granchi.whatnow.WhatNowApplication;
 import org.granchi.whatnow.WhatNowPreferencesModel;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -52,7 +53,11 @@ public class WhatNowModule {
     HollywoodApplication provideHollywoodApp(Model initialModel,
                                              Collection<Actor> actors,
                                              ModelExceptionHandler exceptionHandler) {
-        return new HollywoodApplication(initialModel, actors, exceptionHandler);
+        return new HollywoodApplication(initialModel,
+                                        actors,
+                                        exceptionHandler,
+                                        LoggerFactory.getLogger(HollywoodApplication.class
+                                                                        .getName()));
     }
 
 //
@@ -81,7 +86,7 @@ public class WhatNowModule {
 
     @Provides
     Collection<Actor> provideActors() {
-        return Arrays.asList(new StubActor());
+        return Arrays.<Actor>asList(new StubActor());
     }
 
     @Provides

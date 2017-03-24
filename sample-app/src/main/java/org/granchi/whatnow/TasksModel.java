@@ -18,11 +18,11 @@ public class TasksModel extends Model {
 
     @Inject
     public TasksModel() {
-        this.tasks = Collections.unmodifiableList(Collections.emptyList());
+        this.tasks = Collections.emptyList();
     }
 
     @Override
-    protected Model actUpon(Action action) {
+    public Model actUpon(Action action) {
         return this;
     }
 }

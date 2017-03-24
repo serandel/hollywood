@@ -2,7 +2,6 @@ package org.granchi.whatnow;
 
 import org.granchi.hollywood.Action;
 import org.granchi.hollywood.Model;
-import org.granchi.hollywood.android.preferences.SharedPreferencesModel;
 
 import javax.inject.Inject;
 
@@ -11,7 +10,7 @@ import javax.inject.Inject;
  *
  * @author serandel
  */
-public class WhatNowPreferencesModel extends SharedPreferencesModel {
+public class WhatNowPreferencesModel extends Model {
     /**
      * Constructor.
      */
@@ -21,7 +20,7 @@ public class WhatNowPreferencesModel extends SharedPreferencesModel {
     }
 
     @Override
-    protected Model actUpon(Action action) {
+    public Model actUpon(Action action) {
         return this;
     }
 }
