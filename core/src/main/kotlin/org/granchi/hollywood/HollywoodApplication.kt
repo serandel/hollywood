@@ -46,7 +46,6 @@ class HollywoodApplication(private var model: Model,
         actions = Observable.merge(actionObservables)
     }
 
-
     /**
      * Runs the application.
      *
