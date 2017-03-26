@@ -5,6 +5,5 @@
 
     <application
         android:name="DebugWhatNowApplication"
-        tools:replace="android:name"></application>
-
+        tools:replace="android:name"/>
 </manifest>
