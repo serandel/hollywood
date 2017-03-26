@@ -1,5 +1,6 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-kapt'
 
 description = "Sample app for Hollywood Android"
 
@@ -37,6 +38,7 @@ android {
 
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
+        debug.java.srcDirs += 'src/debug/kotlin'
         test.java.srcDirs += 'src/test/kotlin'
     }
 }
@@ -44,10 +46,8 @@ android {
 dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 
-    annotationProcessor "com.google.dagger:dagger-compiler:$dagger_version"
-
+    kapt "com.google.dagger:dagger-compiler:$dagger_version"
     compile "com.google.dagger:dagger:$dagger_version"
-
     provided 'javax.annotation:jsr250-api:1.0'
 
     compile fileTree(include: ['*.jar'], dir: 'libs')
