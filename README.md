@@ -17,7 +17,7 @@ What Now?, the sample application for Hollywood, is a twist in the traditional t
 
 ## Developer beware!
 
-- Hollywood, Hollywood Android and What Now use extensively Java 1.8. For the projects to work, Retrolambda and Jack support had to be added. Jack wasn't enough because Java libraries are imported via Jill, and Jill can't manage .class files for Java 7/8 (at least, not the ones with *invokedynamic* in their bytecode). It's worth the trouble because life is to short to use outdated code in your pet projects. That's what the day job is for. ;)
+- Hollywood, Hollywood Android and What Now use extensively Java 1.8. For the projects to work, Retrolambda and Jack support had to be added. Jack wasn't enough because Java libraries are imported via Jill, and Jill can't manage .class files for Java 7/8 (at least, not the ones with *invokedynamic* in their bytecode). It's worth the trouble because life is too short to use outdated code in your pet projects. That's what the day job is for. ;)
 - Hollywood Android uses Timber instead of Android.log. It's a tiny library, and useful enough to merit being a dependency.
 
 ## TODOs
